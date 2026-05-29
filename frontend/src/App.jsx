@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { Activity, LayoutDashboard, History } from 'lucide-react';
+import { Activity, LayoutDashboard, History, Layers } from 'lucide-react';
 import './index.css';
 
 // Layout Component
@@ -7,6 +7,7 @@ function Sidebar() {
   const location = useLocation();
   const navItems = [
     { path: '/', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
+    { path: '/screener', label: 'Sector Screener', icon: <Layers size={20} /> },
     { path: '/market/RELIANCE.NS', label: 'Market View', icon: <Activity size={20} /> },
     { path: '/backtest', label: 'Backtesting', icon: <History size={20} /> },
   ];
@@ -68,6 +69,7 @@ function Sidebar() {
 import Dashboard from './pages/Dashboard';
 import MarketView from './pages/MarketView';
 import BacktestView from './pages/BacktestView';
+import ScreenerView from './pages/ScreenerView';
 
 function App() {
   return (
@@ -77,6 +79,7 @@ function App() {
         <main className="main-content">
           <Routes>
             <Route path="/" element={<Dashboard />} />
+            <Route path="/screener" element={<ScreenerView />} />
             <Route path="/market/:symbol" element={<MarketView />} />
             <Route path="/backtest" element={<BacktestView />} />
           </Routes>

@@ -1,14 +1,13 @@
 from datetime import date
 from typing import Any
 from pydantic import BaseModel
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException
 
 from app.backtest.engine import BacktestEngine
-from app.database import get_db
-from sqlalchemy.orm import Session
-from app.models.backtest import BacktestRun
+from app.data.s3_service import S3StorageService
 
 router = APIRouter()
+s3_svc = S3StorageService()
 
 class BacktestRequest(BaseModel):
     symbol: str
@@ -32,56 +31,51 @@ def run_backtest(request: BacktestRequest) -> dict[str, Any]:
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.get("/runs")
-def list_backtest_runs(db: Session = Depends(get_db)):
+def list_backtest_runs():
     """List all executed backtest runs (metadata only)."""
-    runs = db.query(BacktestRun).order_by(BacktestRun.created_at.desc()).all()
+    index_data = s3_svc.download_json("backtests/index.json") or []
+    
+    # Sort by timestamp descending
+    index_data.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
+    
     return [{
-        "id": run.id,
-        "strategy": run.strategy_name,
-        "symbol": run.config.get("symbol", "N/A") if run.config else "N/A",
-        "start_date": run.start_date,
-        "end_date": run.end_date,
-        "total_return": run.total_return,
-        "win_rate": run.win_rate,
-        "sharpe_ratio": run.sharpe_ratio,
-        "max_drawdown": run.max_drawdown,
-        "created_at": run.created_at
-    } for run in runs]
+        "id": run.get("id"),
+        "strategy": run.get("strategy_name"),
+        "symbol": run.get("config", {}).get("symbol", "N/A"),
+        "start_date": run.get("start_date"),
+        "end_date": run.get("end_date"),
+        "total_return": run.get("total_return"),
+        "win_rate": run.get("win_rate"),
+        "sharpe_ratio": run.get("sharpe_ratio"),
+        "max_drawdown": run.get("max_drawdown"),
+        "created_at": run.get("timestamp")
+    } for run in index_data]
 
 @router.get("/runs/{run_id}")
-def get_backtest_run(run_id: int, db: Session = Depends(get_db)):
+def get_backtest_run(run_id: str):
     """Retrieve full details and trade history for a specific backtest run."""
-    run = db.query(BacktestRun).filter(BacktestRun.id == run_id).first()
-    if not run:
+    run_data = s3_svc.download_json(f"backtests/{run_id}.json")
+    if not run_data:
         raise HTTPException(status_code=404, detail="Backtest run not found")
         
-    trades = [{
-        "id": t.id,
-        "symbol": t.symbol,
-        "action": t.action,
-        "entry_date": t.entry_date,
-        "entry_price": t.entry_price,
-        "exit_date": t.exit_date,
-        "exit_price": t.exit_price,
-        "return_pct": t.return_pct,
-        "holding_days": t.holding_days
-    } for t in run.trades]
+    run = run_data["run_record"]
+    trades = run_data.get("trades", [])
     
     return {
         "metadata": {
-            "id": run.id,
-            "strategy": run.strategy_name,
-            "config": run.config,
-            "start_date": run.start_date,
-            "end_date": run.end_date,
-            "initial_capital": run.initial_capital,
-            "final_capital": run.final_capital,
-            "total_return": run.total_return,
-            "sharpe_ratio": run.sharpe_ratio,
-            "max_drawdown": run.max_drawdown,
-            "win_rate": run.win_rate,
-            "total_trades": run.total_trades,
-            "created_at": run.created_at
+            "id": run.get("id"),
+            "strategy": run.get("strategy_name"),
+            "config": run.get("config"),
+            "start_date": run.get("start_date"),
+            "end_date": run.get("end_date"),
+            "initial_capital": run.get("initial_capital"),
+            "final_capital": run.get("final_capital"),
+            "total_return": run.get("total_return"),
+            "sharpe_ratio": run.get("sharpe_ratio"),
+            "max_drawdown": run.get("max_drawdown"),
+            "win_rate": run.get("win_rate"),
+            "total_trades": run.get("total_trades"),
+            "created_at": run.get("timestamp")
         },
         "trades": trades
     }

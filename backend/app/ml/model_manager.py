@@ -28,6 +28,7 @@ from sklearn.metrics import (
 from sklearn.model_selection import TimeSeriesSplit
 
 from app.config import settings
+from app.data.s3_service import S3StorageService
 from app.ml.ml_data_preparer import LABEL_NAMES, MLDataPreparer
 from app.ml.models import (
     BaseMLModel,
@@ -108,6 +109,7 @@ class ModelManager:
         self.model_dir = Path(model_dir or settings.ML_MODEL_DIR)
         self.data_preparer = data_preparer or MLDataPreparer()
         self._model_cache: dict[str, BaseMLModel] = {}
+        self.s3_svc = S3StorageService()
 
     # ------------------------------------------------------------------
     # Training
@@ -313,33 +315,21 @@ class ModelManager:
         Returns:
             Dictionary with model info, or ``None`` if no model exists.
         """
-        metadata_path = self._get_model_dir(symbol) / "metadata.json"
-        if not metadata_path.exists():
-            return None
-
-        try:
-            with open(metadata_path, "r") as f:
-                return json.load(f)
-        except Exception as exc:
-            logger.warning("Failed to load metadata for %s: %s", symbol, exc)
-            return None
+        safe_name = symbol.replace(".", "_").replace("/", "_")
+        s3_key = f"ml_models/{safe_name}/metadata.json"
+        return self.s3_svc.download_json(s3_key)
 
     def get_all_model_info(self) -> list[dict[str, Any]]:
-        """Return metadata for all trained models."""
-        results: list[dict[str, Any]] = []
-        if not self.model_dir.exists():
-            return results
-
-        for subdir in sorted(self.model_dir.iterdir()):
-            if subdir.is_dir():
-                metadata_path = subdir / "metadata.json"
-                if metadata_path.exists():
-                    try:
-                        with open(metadata_path, "r") as f:
-                            results.append(json.load(f))
-                    except Exception:
-                        pass
-
+        """Return metadata for all trained models from S3."""
+        results = []
+        keys = self.s3_svc.list_objects("ml_models/")
+        
+        for key in keys:
+            if key.endswith("metadata.json"):
+                info = self.s3_svc.download_json(key)
+                if info:
+                    results.append(info)
+                    
         return results
 
     def needs_retrain(self, symbol: str) -> bool:
@@ -369,17 +359,21 @@ class ModelManager:
         model: BaseMLModel,
         feature_names: list[str],
     ) -> Path:
-        """Save a trained model and its metadata to disk."""
+        """Save a trained model and its metadata to disk and S3."""
         model_dir = self._get_model_dir(symbol)
         model_dir.mkdir(parents=True, exist_ok=True)
 
         model_path = model_dir / "model.joblib"
-        metadata_path = model_dir / "metadata.json"
-
-        # Save model
+        
+        # Save model locally temporarily
         joblib.dump(model, model_path)
 
-        # Save metadata
+        # Upload model to S3
+        safe_name = symbol.replace(".", "_").replace("/", "_")
+        s3_model_key = f"ml_models/{safe_name}/model.joblib"
+        self.s3_svc.upload_file(s3_model_key, str(model_path))
+
+        # Save metadata to S3
         metadata = {
             "symbol": symbol,
             "model_name": model.name,
@@ -388,26 +382,35 @@ class ModelManager:
             "trained_at": datetime.now(tz=timezone.utc).isoformat(),
             "params": model.get_params(),
         }
-        with open(metadata_path, "w") as f:
-            json.dump(metadata, f, indent=2)
+        s3_metadata_key = f"ml_models/{safe_name}/metadata.json"
+        self.s3_svc.upload_json(s3_metadata_key, metadata)
 
-        logger.info("Saved %s model for %s to %s", model.name, symbol, model_path)
+        logger.info("Saved %s model for %s to S3: %s", model.name, symbol, s3_model_key)
         return model_path
 
     def _load_model(self, symbol: str) -> BaseMLModel | None:
-        """Load a trained model from disk or cache."""
+        """Load a trained model from cache or S3."""
         # Check cache first
         if symbol in self._model_cache:
             return self._model_cache[symbol]
 
-        model_path = self._get_model_dir(symbol) / "model.joblib"
+        model_dir = self._get_model_dir(symbol)
+        model_dir.mkdir(parents=True, exist_ok=True)
+        model_path = model_dir / "model.joblib"
+        
+        safe_name = symbol.replace(".", "_").replace("/", "_")
+        s3_model_key = f"ml_models/{safe_name}/model.joblib"
+
         if not model_path.exists():
-            return None
+            # Try to download from S3
+            success = self.s3_svc.download_file(s3_model_key, str(model_path))
+            if not success:
+                return None
 
         try:
             model: BaseMLModel = joblib.load(model_path)
             self._model_cache[symbol] = model
-            logger.info("Loaded %s model for %s from disk", model.name, symbol)
+            logger.info("Loaded %s model for %s", model.name, symbol)
             return model
         except Exception as exc:
             logger.error("Failed to load model for %s: %s", symbol, exc)

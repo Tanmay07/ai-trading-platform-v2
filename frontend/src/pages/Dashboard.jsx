@@ -33,41 +33,51 @@ export default function Dashboard() {
         <GlassCard>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <div style={{ padding: '1rem', background: 'var(--bg-surface-elevated)', borderRadius: '50%' }}>
-              <TrendingUp size={24} color="var(--signal-up)" />
+              <DollarSign size={24} color="var(--accent-primary)" />
             </div>
             <div>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: 0 }}>Watchlist Size</p>
-              <h2 style={{ margin: 0, fontSize: '1.8rem' }}>{summary.count}</h2>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: 0 }}>Total Value</p>
+              <h2 style={{ margin: 0, fontSize: '1.8rem' }}>₹{summary.total_market_value?.toFixed(2) || '0.00'}</h2>
             </div>
           </div>
         </GlassCard>
 
-        {/* Can add more top-level stats here */}
+        <GlassCard>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <div style={{ padding: '1rem', background: 'var(--bg-surface-elevated)', borderRadius: '50%' }}>
+              {summary.total_unrealized_pnl >= 0 ? <TrendingUp size={24} color="var(--signal-up)" /> : <TrendingDown size={24} color="var(--signal-down)" />}
+            </div>
+            <div>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: 0 }}>Unrealized P&L</p>
+              <h2 style={{ margin: 0, fontSize: '1.8rem', color: summary.total_unrealized_pnl >= 0 ? 'var(--signal-up)' : 'var(--signal-down)' }}>
+                {summary.total_unrealized_pnl >= 0 ? '+' : ''}₹{summary.total_unrealized_pnl?.toFixed(2) || '0.00'}
+              </h2>
+            </div>
+          </div>
+        </GlassCard>
       </div>
 
-      <GlassCard title="Active Symbols">
+      <GlassCard title="Active Holdings">
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--glass-border)', color: 'var(--text-secondary)' }}>
                 <th style={{ padding: '1rem 0.5rem' }}>Symbol</th>
-                <th style={{ padding: '1rem 0.5rem' }}>Last Close</th>
-                <th style={{ padding: '1rem 0.5rem' }}>Trend (SMA)</th>
+                <th style={{ padding: '1rem 0.5rem' }}>Qty</th>
+                <th style={{ padding: '1rem 0.5rem' }}>Avg Price</th>
+                <th style={{ padding: '1rem 0.5rem' }}>Current Price</th>
+                <th style={{ padding: '1rem 0.5rem' }}>P&L (%)</th>
               </tr>
             </thead>
             <tbody>
-              {summary.assets.map((asset, idx) => (
-                <tr key={asset.symbol} style={{ borderBottom: '1px solid var(--glass-border)' }}>
-                  <td style={{ padding: '1rem 0.5rem', fontWeight: '500' }}>{asset.symbol}</td>
-                  <td style={{ padding: '1rem 0.5rem' }}>₹{asset.last_price?.toFixed(2) || 'N/A'}</td>
-                  <td style={{ padding: '1rem 0.5rem' }}>
-                    {asset.trend === 'BULLISH' ? (
-                      <span style={{ color: 'var(--signal-up)' }}>Bullish</span>
-                    ) : asset.trend === 'BEARISH' ? (
-                      <span style={{ color: 'var(--signal-down)' }}>Bearish</span>
-                    ) : (
-                      <span style={{ color: 'var(--signal-neutral)' }}>Neutral</span>
-                    )}
+              {summary.holdings.map((holding) => (
+                <tr key={holding.symbol} style={{ borderBottom: '1px solid var(--glass-border)' }}>
+                  <td style={{ padding: '1rem 0.5rem', fontWeight: '500' }}>{holding.symbol}</td>
+                  <td style={{ padding: '1rem 0.5rem' }}>{holding.quantity}</td>
+                  <td style={{ padding: '1rem 0.5rem' }}>₹{holding.avg_buy_price?.toFixed(2)}</td>
+                  <td style={{ padding: '1rem 0.5rem' }}>₹{holding.current_price?.toFixed(2) || 'N/A'}</td>
+                  <td style={{ padding: '1rem 0.5rem', color: holding.unrealized_pnl >= 0 ? 'var(--signal-up)' : 'var(--signal-down)' }}>
+                    {holding.unrealized_pnl >= 0 ? '+' : ''}{holding.unrealized_pnl_pct?.toFixed(2)}%
                   </td>
                 </tr>
               ))}

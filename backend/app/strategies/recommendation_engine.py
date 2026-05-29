@@ -215,6 +215,25 @@ class RecommendationEngine:
             recommendations.append(rec)
         return recommendations
 
+    def get_watchlist_recommendations(self, symbols: list[str]) -> list[dict]:
+        """Generate recommendations for an arbitrary list of symbols.
+        
+        Args:
+            symbols: List of NSE stock symbols.
+            
+        Returns:
+            List of recommendation dicts.
+        """
+        recommendations: list[dict] = []
+        for symbol in symbols:
+            try:
+                rec = self.get_recommendation(symbol=symbol)
+                recommendations.append(rec)
+            except Exception as exc:
+                self.logger.warning("Failed recommendation for %s: %s", symbol, exc)
+                recommendations.append(self._empty_recommendation(symbol))
+        return recommendations
+
     def get_top_upside_stocks(
         self,
         symbols: list[str] | None = None,

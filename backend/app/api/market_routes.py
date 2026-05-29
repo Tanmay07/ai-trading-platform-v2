@@ -18,6 +18,7 @@ from fastapi import APIRouter, HTTPException, Query
 from app.config import settings
 from app.data.historical_data_service import HistoricalDataService
 from app.data.market_data_service import MarketDataService
+from app.data.screener_service import ScreenerService
 from app.features.feature_pipeline import FeaturePipeline
 from app.utils.helpers import DISCLAIMER, validate_symbol
 from app.utils.logger import get_logger
@@ -30,6 +31,7 @@ router = APIRouter(tags=["Market Data"])
 _market_svc = MarketDataService()
 _history_svc = HistoricalDataService(market_data_service=_market_svc)
 _feature_pipeline = FeaturePipeline()
+_screener_svc = ScreenerService()
 
 
 # ------------------------------------------------------------------
@@ -206,6 +208,42 @@ async def get_watchlist() -> dict[str, Any]:
         logger.error("Error fetching watchlist: %s", exc, exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to fetch watchlist: {exc}")
 
+
+@router.get("/sectors")
+async def get_sectors() -> dict[str, Any]:
+    """Get market stocks grouped by sector with live quotes.
+
+    Returns:
+        JSON with sector names mapping to a list of dicts with symbol and price data.
+    """
+    logger.info("GET /market/sectors")
+    try:
+        sectors = await _screener_svc.get_sectors()
+        
+        # Flatten all symbols to fetch quotes in one batch
+        all_symbols = []
+        for syms in sectors.values():
+            all_symbols.extend(syms)
+            
+        loop = asyncio.get_running_loop()
+        quotes: dict = await loop.run_in_executor(
+            None, partial(_market_svc.get_multiple_quotes, all_symbols)
+        )
+        
+        result = {}
+        for sector, syms in sectors.items():
+            result[sector] = []
+            for sym in syms:
+                data = quotes.get(sym, {})
+                result[sector].append({"symbol": sym, **data})
+                
+        return {
+            "sectors": result,
+            "disclaimer": DISCLAIMER
+        }
+    except Exception as exc:
+        logger.error("Error fetching sectors: %s", exc, exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to fetch sectors: {exc}")
 
 # ------------------------------------------------------------------
 # Helpers

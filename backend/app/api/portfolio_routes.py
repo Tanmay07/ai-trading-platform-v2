@@ -13,11 +13,8 @@ import asyncio
 from functools import partial
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
-from sqlalchemy.orm import Session
-
-from app.database import get_db
 from app.portfolio.portfolio_service import PortfolioService
 from app.strategies.recommendation_engine import RecommendationEngine
 from app.utils.helpers import DISCLAIMER, validate_symbol
@@ -67,7 +64,6 @@ class HoldingResponse(BaseModel):
 @router.post("")
 async def add_holding(
     request: AddHoldingRequest,
-    db: Session = Depends(get_db),
 ) -> dict[str, Any]:
     """Add a holding to the portfolio.
 
@@ -83,7 +79,6 @@ async def add_holding(
 
     try:
         holding = _portfolio_svc.add_holding(
-            db=db,
             symbol=request.symbol,
             quantity=request.quantity,
             buy_price=request.buy_price,
@@ -94,11 +89,11 @@ async def add_holding(
         return {
             "message": "Holding added/updated successfully",
             "holding": {
-                "symbol": holding.symbol,
-                "quantity": holding.quantity,
-                "avg_buy_price": round(holding.avg_buy_price, 2),
-                "sector": holding.sector,
-                "notes": holding.notes,
+                "symbol": holding["symbol"],
+                "quantity": holding["quantity"],
+                "avg_buy_price": holding["avg_buy_price"],
+                "sector": holding.get("sector"),
+                "notes": holding.get("notes"),
             },
             "disclaimer": DISCLAIMER,
         }
@@ -110,7 +105,7 @@ async def add_holding(
 
 
 @router.get("")
-async def get_portfolio(db: Session = Depends(get_db)) -> dict[str, Any]:
+async def get_portfolio() -> dict[str, Any]:
     """Get portfolio summary with live prices and unrealized P&L.
 
     Fetches current market prices for each holding and calculates
@@ -121,7 +116,7 @@ async def get_portfolio(db: Session = Depends(get_db)) -> dict[str, Any]:
     try:
         loop = asyncio.get_running_loop()
         summary: dict = await loop.run_in_executor(
-            None, partial(_portfolio_svc.get_portfolio_summary, db)
+            None, partial(_portfolio_svc.get_portfolio_summary)
         )
         return summary
     except Exception as exc:
@@ -132,7 +127,6 @@ async def get_portfolio(db: Session = Depends(get_db)) -> dict[str, Any]:
 @router.delete("/{symbol}")
 async def remove_holding(
     symbol: str,
-    db: Session = Depends(get_db),
 ) -> dict[str, Any]:
     """Remove a holding from the portfolio.
 
@@ -142,7 +136,7 @@ async def remove_holding(
     logger.info("DELETE /portfolio/%s", symbol)
 
     try:
-        removed = _portfolio_svc.remove_holding(db, symbol)
+        removed = _portfolio_svc.remove_holding(symbol)
         if not removed:
             raise HTTPException(
                 status_code=404,
@@ -162,7 +156,7 @@ async def remove_holding(
 
 
 @router.get("/recommendations")
-async def get_recommendations(db: Session = Depends(get_db)) -> dict[str, Any]:
+async def get_recommendations() -> dict[str, Any]:
     """Get BUY/SELL/HOLD recommendations for all portfolio stocks.
 
     Runs the recommendation engine on each holding, combining
@@ -171,7 +165,7 @@ async def get_recommendations(db: Session = Depends(get_db)) -> dict[str, Any]:
     logger.info("GET /portfolio/recommendations")
 
     try:
-        holdings = _portfolio_svc.get_holdings(db)
+        holdings = _portfolio_svc.get_holdings()
 
         if not holdings:
             return {
@@ -184,10 +178,10 @@ async def get_recommendations(db: Session = Depends(get_db)) -> dict[str, Any]:
         # Build holdings list for the recommendation engine
         holdings_data = [
             {
-                "symbol": h.symbol,
-                "quantity": h.quantity,
-                "avg_buy_price": h.avg_buy_price,
-                "sector": h.sector,
+                "symbol": h["symbol"],
+                "quantity": h["quantity"],
+                "avg_buy_price": h["avg_buy_price"],
+                "sector": h.get("sector"),
             }
             for h in holdings
         ]

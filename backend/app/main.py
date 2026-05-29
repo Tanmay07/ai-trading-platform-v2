@@ -13,7 +13,6 @@ from fastapi.responses import RedirectResponse
 
 from app import __version__
 from app.config import settings
-from app.database import init_db
 from app.utils.helpers import DISCLAIMER, get_ist_now
 from app.utils.logger import get_logger
 
@@ -28,13 +27,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logger.info("🚀 Starting %s v%s", settings.APP_NAME, settings.VERSION)
     logger.info("📋 Debug mode: %s", settings.DEBUG)
 
-    # Import models so Base.metadata is populated before create_all
-    import app.models.portfolio  # noqa: F401
-    import app.models.prediction  # noqa: F401
-    import app.models.backtest  # noqa: F401
-    import app.models.sentiment  # noqa: F401  (Phase 2)
-
-    init_db()
+    # Database logic migrated to S3 Storage Service
     logger.info("✅ Application started successfully")
 
     yield  # ← application runs here

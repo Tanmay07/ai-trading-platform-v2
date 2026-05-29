@@ -10,7 +10,7 @@ const api = axios.create({
 });
 
 export const getMarketSummary = async () => {
-  const response = await api.get('/market/summary');
+  const response = await api.get('/portfolio');
   return response.data;
 };
 
@@ -41,6 +41,21 @@ export const getBacktestRuns = async () => {
 
 export const getBacktestRunById = async (id) => {
   const response = await api.get(`/backtest/runs/${id}`);
+  return response.data;
+};
+
+export const getSectors = async () => {
+  const response = await api.get('/market/sectors');
+  return response.data;
+};
+
+export const trainBatch = async (symbols, period = '3y') => {
+  const response = await api.post('/ml/train_batch', { symbols, period });
+  return response.data;
+};
+
+export const getStrategy = async (symbols) => {
+  const response = await api.post('/predictions/strategy', { symbols });
   return response.data;
 };
 

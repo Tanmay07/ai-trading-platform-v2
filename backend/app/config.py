@@ -22,8 +22,14 @@ class Settings(BaseSettings):
     DEBUG: bool = False
     VERSION: str = "0.1.0"
 
-    # ── Database ──────────────────────────────────────────────
+    # ── Database & Storage ────────────────────────────────────
     DATABASE_URL: str = "sqlite:///./trading.db"
+    
+    # AWS S3 Settings
+    AWS_ACCESS_KEY: str = ""
+    AWS_SECRET_KEY: str = ""
+    AWS_REGION: str = "ap-south-1"
+    AWS_S3_BUCKET: str = "ai-trading-platform-data"
 
     # ── API Keys ──────────────────────────────────────────────
     NEWS_API_KEY: str = ""

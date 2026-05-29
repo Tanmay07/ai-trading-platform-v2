@@ -15,6 +15,7 @@ import asyncio
 from functools import partial
 from typing import Any
 
+from pydantic import BaseModel
 from fastapi import APIRouter, HTTPException, Query
 
 from app.config import settings
@@ -28,6 +29,14 @@ router = APIRouter(tags=["Predictions"])
 
 # Shared engine instance
 _engine = RecommendationEngine()
+
+
+# ------------------------------------------------------------------
+# Request Models
+# ------------------------------------------------------------------
+
+class StrategyRequest(BaseModel):
+    symbols: list[str]
 
 
 # ------------------------------------------------------------------
@@ -128,4 +137,31 @@ async def get_prediction(symbol: str) -> dict[str, Any]:
         logger.error("Error generating prediction for %s: %s", symbol, exc, exc_info=True)
         raise HTTPException(
             status_code=500, detail=f"Failed to generate prediction: {exc}"
+        )
+
+
+@router.post("/strategy")
+async def get_strategy(request: StrategyRequest) -> dict[str, Any]:
+    """Get recommendations for a batch of symbols (e.g. from a sector).
+
+    Returns:
+        JSON with a list of complete recommendation objects.
+    """
+    symbols = request.symbols
+    logger.info("POST /predictions/strategy for %d symbols", len(symbols))
+
+    try:
+        loop = asyncio.get_running_loop()
+        recommendations: list[dict] = await loop.run_in_executor(
+            None, partial(_engine.get_watchlist_recommendations, symbols)
+        )
+
+        return {
+            "predictions": recommendations,
+            "disclaimer": DISCLAIMER,
+        }
+    except Exception as exc:
+        logger.error("Error generating strategy predictions: %s", exc, exc_info=True)
+        raise HTTPException(
+            status_code=500, detail=f"Failed to generate predictions: {exc}"
         )

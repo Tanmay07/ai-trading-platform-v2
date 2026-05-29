@@ -7,9 +7,9 @@ from app.features.feature_pipeline import FeaturePipeline
 from app.strategies.rule_based_strategy import RuleBasedStrategy
 from app.data.historical_data_service import HistoricalDataService
 from app.data.market_data_service import MarketDataService
-from app.database import get_db, SessionLocal
-from app.models.backtest import BacktestRun, BacktestTrade
+from app.data.s3_service import S3StorageService
 from app.utils.logger import get_logger
+import uuid
 
 
 class BacktestEngine:
@@ -267,47 +267,47 @@ class BacktestEngine:
             "sharpe_ratio": sharpe_ratio
         }
 
-        # 7. Persist to Database
-        db_gen = get_db()
-        db = next(db_gen)
-        try:
-            run_record = BacktestRun(
-                strategy_name="Hybrid AI Strategy (Technicals)",
-                start_date=pd.to_datetime(start_date).date(),
-                end_date=pd.to_datetime(end_date).date(),
-                initial_capital=initial_capital,
-                final_capital=final_capital,
-                total_return=total_return,
-                sharpe_ratio=sharpe_ratio,
-                max_drawdown=max_drawdown,
-                win_rate=win_rate,
-                total_trades=len(trades),
-                config={"symbol": symbol, "risk_per_trade": self.risk_per_trade_pct}
-            )
-            db.add(run_record)
-            db.commit()
-            db.refresh(run_record)
+        # 7. Persist to Database -> S3
+        s3_svc = S3StorageService()
+        run_id = str(uuid.uuid4())
+        metrics["run_id"] = run_id
+        
+        run_record = {
+            "id": run_id,
+            "strategy_name": "Hybrid AI Strategy (Technicals)",
+            "start_date": str(pd.to_datetime(start_date).date()),
+            "end_date": str(pd.to_datetime(end_date).date()),
+            "initial_capital": initial_capital,
+            "final_capital": final_capital,
+            "total_return": total_return,
+            "sharpe_ratio": sharpe_ratio,
+            "max_drawdown": max_drawdown,
+            "win_rate": win_rate,
+            "total_trades": len(trades),
+            "config": {"symbol": symbol, "risk_per_trade": self.risk_per_trade_pct},
+            "timestamp": datetime.now().isoformat()
+        }
 
-            # Insert trades
-            for t in trades:
-                trade_record = BacktestTrade(
-                    backtest_run_id=run_record.id,
-                    symbol=t["symbol"],
-                    action=t["action"],
-                    entry_date=t["entry_date"],
-                    entry_price=t["entry_price"],
-                    exit_date=t["exit_date"],
-                    exit_price=t["exit_price"],
-                    return_pct=t["return_pct"],
-                    holding_days=t["holding_days"]
-                )
-                db.add(trade_record)
-            
-            db.commit()
-            metrics["run_id"] = run_record.id
+        # Convert date objects to strings in trades
+        for t in trades:
+            if isinstance(t["entry_date"], (date, datetime)):
+                t["entry_date"] = t["entry_date"].isoformat()
+            if isinstance(t["exit_date"], (date, datetime)):
+                t["exit_date"] = t["exit_date"].isoformat()
 
-        finally:
-            db.close()
+        full_backtest_data = {
+            "run_record": run_record,
+            "trades": trades,
+            "portfolio_history": portfolio_values
+        }
+
+        # Save to S3
+        s3_svc.upload_json(f"backtests/{run_id}.json", full_backtest_data)
+        
+        # Update index
+        index_data = s3_svc.download_json("backtests/index.json") or []
+        index_data.append(run_record)
+        s3_svc.upload_json("backtests/index.json", index_data)
 
         return {
             "metrics": metrics,

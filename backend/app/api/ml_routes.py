@@ -12,6 +12,7 @@ import asyncio
 from functools import partial
 from typing import Any
 
+from pydantic import BaseModel
 from fastapi import APIRouter, HTTPException, Query
 
 from app.config import settings
@@ -24,6 +25,15 @@ logger = get_logger(__name__)
 router = APIRouter(tags=["ML"])
 
 _manager = ModelManager()
+
+
+# ------------------------------------------------------------------
+# Pydantic request models
+# ------------------------------------------------------------------
+
+class TrainBatchRequest(BaseModel):
+    symbols: list[str]
+    period: str = "3y"
 
 
 # ------------------------------------------------------------------
@@ -125,6 +135,50 @@ async def train_all_models(
 
     except Exception as exc:
         logger.error("Batch training failed: %s", exc, exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Batch training failed: {exc}",
+        )
+
+
+@router.post("/train_batch")
+async def train_batch(
+    request: TrainBatchRequest
+) -> dict[str, Any]:
+    """Train ML models for a custom list of symbols.
+
+    Args:
+        request: JSON body containing symbols and period.
+
+    Returns:
+        JSON with per-stock training results summary.
+    """
+    symbols = request.symbols
+    period = request.period
+    logger.info("POST /ml/train_batch (period=%s, stocks=%d)", period, len(symbols))
+
+    try:
+        loop = asyncio.get_running_loop()
+        results = await loop.run_in_executor(
+            None,
+            partial(_manager.train_all, symbols, period),
+        )
+
+        summary = {
+            "total": len(results),
+            "success": sum(1 for r in results if r.success),
+            "failed": sum(1 for r in results if not r.success),
+        }
+
+        return {
+            "status": "complete",
+            "summary": summary,
+            "results": [r.to_dict() for r in results],
+            "disclaimer": DISCLAIMER,
+        }
+
+    except Exception as exc:
+        logger.error("Custom batch training failed: %s", exc, exc_info=True)
         raise HTTPException(
             status_code=500,
             detail=f"Batch training failed: {exc}",

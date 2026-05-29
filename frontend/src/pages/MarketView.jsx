@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { createChart } from 'lightweight-charts';
+import { createChart, CandlestickSeries } from 'lightweight-charts';
 import GlassCard from '../components/GlassCard';
 import { getMarketHistory, getSentiment, getPrediction } from '../services/api';
 import { Search } from 'lucide-react';
@@ -39,16 +39,22 @@ export default function MarketView() {
 
   // Render Chart
   useEffect(() => {
-    if (!history || !chartContainerRef.current) return;
+    if (!history || !history.data || !chartContainerRef.current) return;
 
-    // Format data for lightweight-charts
-    const candleData = history.dates.map((date, i) => ({
-      time: date,
-      open: history.open[i],
-      high: history.high[i],
-      low: history.low[i],
-      close: history.close[i]
-    }));
+    const candleData = history.data.reduce((acc, row) => {
+      if (!row.Date) return acc;
+      const time = row.Date.split('T')[0];
+      if (!acc.length || acc[acc.length - 1].time !== time) {
+        acc.push({
+          time,
+          open: row.Open,
+          high: row.High,
+          low: row.Low,
+          close: row.Close
+        });
+      }
+      return acc;
+    }, []);
 
     if (!chartRef.current) {
       chartRef.current = createChart(chartContainerRef.current, {
@@ -64,14 +70,14 @@ export default function MarketView() {
         height: 400,
       });
 
-      const candlestickSeries = chartRef.current.addCandlestickSeries({
+      const candlestickSeriesInstance = chartRef.current.addSeries(CandlestickSeries, {
         upColor: '#3fb950',
         downColor: '#f85149',
         borderVisible: false,
         wickUpColor: '#3fb950',
         wickDownColor: '#f85149',
       });
-      candlestickSeries.setData(candleData);
+      candlestickSeriesInstance.setData(candleData);
     } else {
       // If chart exists, just update data (assuming we added simple update logic)
       // For simplicity, we can recreate or just set data on the existing series.
@@ -127,31 +133,31 @@ export default function MarketView() {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
             <GlassCard title="AI Prediction (Ensemble)">
-              {prediction ? (
+              {prediction && prediction.prediction ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ color: 'var(--text-secondary)' }}>Direction:</span>
                     <span style={{ 
                       fontWeight: 'bold', 
-                      color: prediction.direction === 'UP' ? 'var(--signal-up)' : prediction.direction === 'DOWN' ? 'var(--signal-down)' : 'var(--signal-neutral)',
-                      background: prediction.direction === 'UP' ? 'var(--signal-up-bg)' : prediction.direction === 'DOWN' ? 'var(--signal-down-bg)' : 'var(--signal-neutral-bg)',
+                      color: prediction.prediction.direction === 'UP' ? 'var(--signal-up)' : prediction.prediction.direction === 'DOWN' ? 'var(--signal-down)' : 'var(--signal-neutral)',
+                      background: prediction.prediction.direction === 'UP' ? 'var(--signal-up-bg)' : prediction.prediction.direction === 'DOWN' ? 'var(--signal-down-bg)' : 'var(--signal-neutral-bg)',
                       padding: '0.2rem 0.6rem',
                       borderRadius: '4px'
                     }}>
-                      {prediction.direction}
+                      {prediction.prediction.direction}
                     </span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ color: 'var(--text-secondary)' }}>Confidence:</span>
-                    <span>{(prediction.confidence * 100).toFixed(1)}%</span>
+                    <span>{(prediction.prediction.confidence * 100).toFixed(1)}%</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ color: 'var(--text-secondary)' }}>Probability:</span>
-                    <span>{(prediction.probability * 100).toFixed(1)}%</span>
+                    <span>{(prediction.prediction.probability * 100).toFixed(1)}%</span>
                   </div>
                   <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--glass-border)' }}>
                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '0.5rem' }}>Class Probabilities</p>
-                    {Object.entries(prediction.probabilities || {}).map(([key, val]) => (
+                    {Object.entries(prediction.prediction.probabilities || {}).map(([key, val]) => (
                       <div key={key} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.25rem' }}>
                         <span>{key}</span>
                         <span>{(val * 100).toFixed(1)}%</span>
