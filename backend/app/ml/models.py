@@ -22,6 +22,7 @@ from typing import Any
 
 import numpy as np
 from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import RandomizedSearchCV, KFold
 
 from app.utils.logger import get_logger
 
@@ -96,10 +97,17 @@ class BaseMLModel(ABC):
         self.scaler: StandardScaler = StandardScaler()
         self.is_fitted: bool = False
         self._feature_names: list[str] = []
+        self.best_params: dict[str, Any] = {}
 
     @abstractmethod
     def _create_model(self) -> Any:
-        """Create and return the underlying model instance."""
+        """Create and return the underlying model instance (base estimator)."""
+
+    def _get_search_space(self) -> dict[str, Any] | None:
+        """Return hyperparameter search space for RandomizedSearchCV.
+        If None, skips hyperparameter tuning.
+        """
+        return None
 
     def train(
         self,
@@ -125,7 +133,29 @@ class BaseMLModel(ABC):
             self.name, X_scaled.shape[0], X_scaled.shape[1],
         )
 
-        self.model.fit(X_scaled, y_train)
+        search_space = self._get_search_space()
+        if search_space:
+            logger.info("Running RandomizedSearchCV for %s", self.name)
+            # Use KFold as requested by the user
+            cv = KFold(n_splits=3, shuffle=False)
+            search = RandomizedSearchCV(
+                estimator=self.model,
+                param_distributions=search_space,
+                n_iter=10,
+                scoring="f1_macro",
+                cv=cv,
+                random_state=42,
+                n_jobs=-1,
+                verbose=0
+            )
+            search.fit(X_scaled, y_train)
+            self.model = search.best_estimator_
+            self.best_params = search.best_params_
+            logger.info("Best params for %s: %s", self.name, self.best_params)
+        else:
+            self.model.fit(X_scaled, y_train)
+            self.best_params = self.get_params()
+
         self.is_fitted = True
 
         logger.info("%s training complete", self.name)
@@ -189,9 +219,14 @@ class BaseMLModel(ABC):
             model_name=self.name,
         )
 
-    @abstractmethod
     def get_params(self) -> dict[str, Any]:
         """Return model hyperparameters."""
+        if self.is_fitted and hasattr(self, "best_params") and self.best_params:
+            return self.best_params
+        # Fallback to default params if not fitted or tuning was skipped
+        if hasattr(self.model, "get_params"):
+            return self.model.get_params()
+        return {}
 
     def get_feature_importance(self) -> dict[str, float]:
         """Return feature importance scores (if available).
@@ -244,14 +279,15 @@ class XGBoostModel(BaseMLModel):
             verbosity=0,
         )
 
-    def get_params(self) -> dict[str, Any]:
+    def _get_search_space(self) -> dict[str, Any]:
+        from scipy.stats import uniform, randint
         return {
-            "max_depth": 6,
-            "n_estimators": 200,
-            "learning_rate": 0.05,
-            "subsample": 0.8,
-            "colsample_bytree": 0.8,
-            "min_child_weight": 3,
+            "max_depth": randint(3, 10),
+            "n_estimators": randint(100, 300),
+            "learning_rate": uniform(0.01, 0.2),
+            "subsample": uniform(0.6, 0.4),
+            "colsample_bytree": uniform(0.6, 0.4),
+            "min_child_weight": randint(1, 7),
         }
 
 
@@ -284,14 +320,15 @@ class LightGBMModel(BaseMLModel):
             verbose=-1,
         )
 
-    def get_params(self) -> dict[str, Any]:
+    def _get_search_space(self) -> dict[str, Any]:
+        from scipy.stats import uniform, randint
         return {
-            "num_leaves": 31,
-            "n_estimators": 200,
-            "learning_rate": 0.05,
-            "subsample": 0.8,
-            "colsample_bytree": 0.8,
-            "min_child_samples": 20,
+            "num_leaves": randint(20, 50),
+            "n_estimators": randint(100, 300),
+            "learning_rate": uniform(0.01, 0.2),
+            "subsample": uniform(0.6, 0.4),
+            "colsample_bytree": uniform(0.6, 0.4),
+            "min_child_samples": randint(10, 50),
         }
 
 
@@ -356,8 +393,8 @@ class EnsembleModel(BaseMLModel):
         return {
             "models": ["xgboost", "lightgbm"],
             "voting": "soft",
-            "xgboost_params": self.xgb.get_params(),
-            "lightgbm_params": self.lgb.get_params(),
+            "xgboost_params": self.xgb.get_params() if self.xgb.is_fitted else {},
+            "lightgbm_params": self.lgb.get_params() if self.lgb.is_fitted else {},
         }
 
     def get_feature_importance(self) -> dict[str, float]:

@@ -194,7 +194,10 @@ class TestXGBoostModel:
         """get_params should return expected keys."""
         from app.ml.models import XGBoostModel
 
+        X, y, names = make_synthetic_features(50, 5) # use fewer features for speed
         model = XGBoostModel()
+        model.train(X, y, names)
+
         params = model.get_params()
         assert "max_depth" in params
         assert "n_estimators" in params
@@ -245,7 +248,10 @@ class TestLightGBMModel:
         """get_params should return expected keys."""
         from app.ml.models import LightGBMModel
 
+        X, y, names = make_synthetic_features(50, 5)
         model = LightGBMModel()
+        model.train(X, y, names)
+        
         params = model.get_params()
         assert "num_leaves" in params
         assert "n_estimators" in params

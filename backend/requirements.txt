@@ -41,6 +41,7 @@ feedparser>=6.0
 
 # --- Phase 3: ML Prediction Models ---
 scikit-learn>=1.8.0
+scipy>=1.10.0
 xgboost>=3.2.0
 lightgbm>=4.6.0
 joblib>=1.4.0
