@@ -176,7 +176,7 @@ ai-trading-platform/
 - [x] **Phase 2**: News sentiment analysis (NLP), multi-source news aggregation
 - [x] **Phase 3**: ML prediction models (XGBoost, LightGBM, ensemble)
 - [x] **Phase 4**: Backtesting engine, strategy optimization
-- [ ] **Phase 5**: Frontend dashboard, real-time WebSocket updates
+- [x] **Phase 5**: Frontend dashboard, real-time WebSocket updates
 
 ---
 

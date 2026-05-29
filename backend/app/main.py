@@ -69,6 +69,15 @@ app.add_middleware(
 )
 
 
+# Add CORS Middleware for React frontend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # ── Include API Routers ──────────────────────────────────────
 # Lazy-import routers to avoid circular-import issues and allow
 # each module to import from database/config freely.
@@ -78,13 +87,14 @@ from app.api.prediction_routes import router as prediction_router  # noqa: E402
 from app.api.sentiment_routes import router as sentiment_router  # noqa: E402
 from app.api.ml_routes import router as ml_router                # noqa: E402
 from app.api.backtest_routes import router as backtest_router    # noqa: E402
-
+from app.api.ws_routes import router as ws_router                # noqa: E402
 app.include_router(market_router, prefix="/market", tags=["Market Data"])
 app.include_router(portfolio_router, prefix="/portfolio", tags=["Portfolio"])
 app.include_router(prediction_router, prefix="/predictions", tags=["Predictions"])
 app.include_router(sentiment_router, prefix="/sentiment", tags=["Sentiment"])
 app.include_router(ml_router, prefix="/ml", tags=["ML"])
 app.include_router(backtest_router, prefix="/backtest", tags=["Backtest"])
+app.include_router(ws_router, prefix="/ws", tags=["WebSocket"])
 
 
 # ── Root Endpoints ────────────────────────────────────────────
