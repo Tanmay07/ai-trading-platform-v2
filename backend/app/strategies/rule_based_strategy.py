@@ -58,28 +58,17 @@ class RuleBasedStrategy:
     ) -> dict:
         """Analyze a DataFrame with pre-computed features and return signal components.
 
-        The method always operates on the **last row** of the DataFrame so that
-        the caller only needs to pass in a feature-enriched time-series.
+        The method operates on the **last row** of the DataFrame.
 
         Args:
             df: DataFrame with OHLCV columns *and* technical indicator columns
                 produced by :class:`FeaturePipeline`.
             sentiment_data: Optional sentiment feature dict from
-                :class:`SentimentFeatures`.  If provided, sentiment is
-                included as a signal dimension.
-            ml_prediction: Optional ML prediction dict with keys
-                ``direction``, ``probability``, ``confidence``.
+                :class:`SentimentFeatures`.
+            ml_prediction: Optional ML prediction dict.
 
         Returns:
-            Dictionary with keys:
-                - ``trend_signal``      (float, -1 to 1)
-                - ``momentum_signal``   (float, -1 to 1)
-                - ``volume_signal``     (float, -1 to 1)
-                - ``volatility_signal`` (float, -1 to 1)
-                - ``sentiment_signal``  (float, -1 to 1)
-                - ``ml_signal``         (float, -1 to 1)
-                - ``combined_score``    (float, weighted average)
-                - ``signal_details``    (dict, detailed breakdown)
+            Dictionary with signal scores.
         """
         if df is None or df.empty:
             self.logger.warning("Empty DataFrame received — returning neutral signals.")
@@ -91,6 +80,24 @@ class RuleBasedStrategy:
             self.logger.warning("Cannot access last row — returning neutral signals.")
             return self._neutral_signals()
 
+        return self.analyze_row(row, sentiment_data, ml_prediction)
+
+    def analyze_row(
+        self,
+        row: pd.Series,
+        sentiment_data: dict | None = None,
+        ml_prediction: dict | None = None,
+    ) -> dict:
+        """Analyze a single row of pre-computed features.
+
+        Args:
+            row: Series containing feature values.
+            sentiment_data: Optional sentiment feature dict.
+            ml_prediction: Optional ML prediction dict.
+
+        Returns:
+            Dictionary with signal scores and details.
+        """
         # Evaluate each dimension independently
         trend_score, trend_reasons = self._assess_trend(row)
         momentum_score, momentum_reasons = self._assess_momentum(row)

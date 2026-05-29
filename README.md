@@ -106,6 +106,13 @@ Interactive docs at **http://127.0.0.1:8000/docs**
 | GET    | `/status/{symbol}`        | Model training status & metrics    |
 | GET    | `/status`                 | Status for all trained models      |
 
+### Backtesting (`/api/v1/backtest`)
+| Method | Endpoint                  | Description                        |
+|--------|---------------------------|------------------------------------|
+| POST   | `/run`                    | Run backtest (symbol, date range)  |
+| GET    | `/runs`                   | List history of backtest runs      |
+| GET    | `/runs/{run_id}`          | Detailed metrics and trade history |
+
 ---
 
 ## 🗂️ Project Structure
@@ -128,7 +135,11 @@ ai-trading-platform/
 │       │   ├── portfolio_routes.py
 │       │   ├── prediction_routes.py
 │       │   ├── sentiment_routes.py     # Phase 2: Sentiment API
-│       │   └── ml_routes.py            # Phase 3: ML API
+│       │   ├── ml_routes.py            # Phase 3: ML API
+│       │   └── backtest_routes.py      # Phase 4: Backtest API
+│       ├── backtest/            # Backtesting Engine
+│       │   ├── __init__.py
+│       │   └── engine.py               # Phase 4: Event-driven simulator
 │       ├── data/                # Market data & news services
 │       │   ├── market_data_service.py
 │       │   ├── live_data_service.py
@@ -164,7 +175,7 @@ ai-trading-platform/
 - [x] **Phase 1**: Core infrastructure, market data, technical analysis, portfolio management
 - [x] **Phase 2**: News sentiment analysis (NLP), multi-source news aggregation
 - [x] **Phase 3**: ML prediction models (XGBoost, LightGBM, ensemble)
-- [ ] **Phase 4**: Backtesting engine, strategy optimization
+- [x] **Phase 4**: Backtesting engine, strategy optimization
 - [ ] **Phase 5**: Frontend dashboard, real-time WebSocket updates
 
 ---
