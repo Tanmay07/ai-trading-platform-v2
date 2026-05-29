@@ -114,6 +114,7 @@ class BaseMLModel(ABC):
         X_train: np.ndarray,
         y_train: np.ndarray,
         feature_names: list[str] | None = None,
+        n_iter: int = 10,
     ) -> None:
         """Fit the model on training data.
 
@@ -121,6 +122,7 @@ class BaseMLModel(ABC):
             X_train: Feature matrix (n_samples, n_features).
             y_train: Label vector (n_samples,).
             feature_names: Optional list of feature column names.
+            n_iter: Number of random search iterations (0 to skip tuning).
         """
         self.model = self._create_model()
         self._feature_names = list(feature_names) if feature_names else []
@@ -134,14 +136,14 @@ class BaseMLModel(ABC):
         )
 
         search_space = self._get_search_space()
-        if search_space:
-            logger.info("Running RandomizedSearchCV for %s", self.name)
+        if search_space and n_iter > 0:
+            logger.info("Running RandomizedSearchCV for %s (n_iter=%d)", self.name, n_iter)
             # Use KFold as requested by the user
             cv = KFold(n_splits=3, shuffle=False)
             search = RandomizedSearchCV(
                 estimator=self.model,
                 param_distributions=search_space,
-                n_iter=10,
+                n_iter=n_iter,
                 scoring="f1_macro",
                 cv=cv,
                 random_state=42,
@@ -237,7 +239,7 @@ class BaseMLModel(ABC):
         if not self.is_fitted or not hasattr(self.model, "feature_importances_"):
             return {}
 
-        importances = self.model.feature_importances_
+        importances = [float(x) for x in self.model.feature_importances_]
         names = self._feature_names or [f"f{i}" for i in range(len(importances))]
 
         result = dict(zip(names, importances))
@@ -262,14 +264,6 @@ class XGBoostModel(BaseMLModel):
         from xgboost import XGBClassifier
 
         return XGBClassifier(
-            max_depth=6,
-            n_estimators=200,
-            learning_rate=0.05,
-            subsample=0.8,
-            colsample_bytree=0.8,
-            min_child_weight=3,
-            reg_alpha=0.1,
-            reg_lambda=1.0,
             objective="multi:softprob",
             num_class=3,
             eval_metric="mlogloss",
@@ -305,14 +299,6 @@ class LightGBMModel(BaseMLModel):
         from lightgbm import LGBMClassifier
 
         return LGBMClassifier(
-            num_leaves=31,
-            n_estimators=200,
-            learning_rate=0.05,
-            subsample=0.8,
-            colsample_bytree=0.8,
-            min_child_samples=20,
-            reg_alpha=0.1,
-            reg_lambda=1.0,
             objective="multiclass",
             num_class=3,
             random_state=42,
@@ -360,6 +346,7 @@ class EnsembleModel(BaseMLModel):
         X_train: np.ndarray,
         y_train: np.ndarray,
         feature_names: list[str] | None = None,
+        n_iter: int = 10,
     ) -> None:
         """Train both constituent models."""
         self._feature_names = list(feature_names) if feature_names else []
@@ -370,8 +357,8 @@ class EnsembleModel(BaseMLModel):
 
         # Train both models with pre-scaled data (they will re-scale, but
         # we need consistent scaling for predict)
-        self.xgb.train(X_train, y_train, feature_names)
-        self.lgb.train(X_train, y_train, feature_names)
+        self.xgb.train(X_train, y_train, feature_names, n_iter=n_iter)
+        self.lgb.train(X_train, y_train, feature_names, n_iter=n_iter)
 
         self.is_fitted = True
         logger.info("Ensemble training complete (XGBoost + LightGBM)")

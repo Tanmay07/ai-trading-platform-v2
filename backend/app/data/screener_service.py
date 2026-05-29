@@ -40,12 +40,39 @@ SECTOR_MAP = {
     ]
 }
 
+from app.data.s3_service import S3StorageService
+from app.data.universe_fetcher import UniverseFetcherService
+
 class ScreenerService:
     """Service to fetch and categorize stocks by sector."""
     
     def __init__(self):
-        self._sector_cache = SECTOR_MAP
+        self.s3_service = S3StorageService()
+        self.universe_fetcher = UniverseFetcherService()
+        self.cache_key = "universe_sectors.json"
         
     async def get_sectors(self) -> Dict[str, List[str]]:
         """Returns the sector groupings for the universe."""
-        return self._sector_cache
+        # Try to fetch from S3 cache
+        loop = asyncio.get_running_loop()
+        
+        try:
+            cached_data = await loop.run_in_executor(
+                None, self.s3_service.download_json, self.cache_key
+            )
+            if cached_data:
+                logger.info("Loaded sector universe from S3 cache")
+                return cached_data
+        except Exception as exc:
+            logger.warning("Failed to load universe cache from S3: %s", exc)
+            
+        # If cache miss, try to scrape it
+        try:
+            logger.info("S3 cache missing. Scraping NIFTY 50 universe...")
+            scraped_data = await loop.run_in_executor(
+                None, self.universe_fetcher.refresh_universe_cache
+            )
+            return scraped_data
+        except Exception as exc:
+            logger.error("Failed to scrape universe, falling back to static map: %s", exc)
+            return SECTOR_MAP

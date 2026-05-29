@@ -49,3 +49,4 @@ joblib>=1.4.0
 # --- Phase 4: Backtesting Engine (uncomment when needed) ---
 # vectorbt>=1.0.0
 boto3==1.43.17
+beautifulsoup4>=4.12.0

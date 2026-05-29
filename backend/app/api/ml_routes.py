@@ -33,7 +33,8 @@ _manager = ModelManager()
 
 class TrainBatchRequest(BaseModel):
     symbols: list[str]
-    period: str = "3y"
+    period: str = "5y"
+    n_iter: int = 10
 
 
 # ------------------------------------------------------------------
@@ -155,13 +156,14 @@ async def train_batch(
     """
     symbols = request.symbols
     period = request.period
-    logger.info("POST /ml/train_batch (period=%s, stocks=%d)", period, len(symbols))
+    n_iter = request.n_iter
+    logger.info("POST /ml/train_batch (period=%s, stocks=%d, n_iter=%d)", period, len(symbols), n_iter)
 
     try:
         loop = asyncio.get_running_loop()
         results = await loop.run_in_executor(
             None,
-            partial(_manager.train_all, symbols, period),
+            partial(_manager.train_all, symbols, period, n_iter),
         )
 
         summary = {

@@ -49,8 +49,13 @@ export const getSectors = async () => {
   return response.data;
 };
 
-export const trainBatch = async (symbols, period = '3y') => {
-  const response = await api.post('/ml/train_batch', { symbols, period });
+export const refreshSectors = async () => {
+  const response = await api.post('/market/sectors/refresh');
+  return response.data;
+};
+
+export const trainBatch = async (symbols, period = '3y', n_iter = 10) => {
+  const response = await api.post('/ml/train_batch', { symbols, period, n_iter });
   return response.data;
 };
 

@@ -61,6 +61,7 @@ class TrainingResult:
     training_period: str = ""
     success: bool = True
     error: str = ""
+    best_params: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -74,6 +75,7 @@ class TrainingResult:
             "training_period": self.training_period,
             "success": self.success,
             "error": self.error,
+            "best_params": self.best_params,
         }
 
 
@@ -119,6 +121,7 @@ class ModelManager:
         self,
         symbol: str,
         period: str = "2y",
+        n_iter: int = 10,
     ) -> TrainingResult:
         """Train all model types and save the best one.
 
@@ -129,6 +132,7 @@ class ModelManager:
         Args:
             symbol: NSE symbol with ``.NS`` suffix.
             period: History period for training data (default ``"2y"``).
+            n_iter: Number of tuning iterations.
 
         Returns:
             TrainingResult with metrics from the best model.
@@ -170,7 +174,7 @@ class ModelManager:
 
             for name, model in models.items():
                 try:
-                    model.train(X_train, y_train, feature_names)
+                    model.train(X_train, y_train, feature_names, n_iter=n_iter)
                     metrics = self._evaluate_model(model, X_test, y_test, X_train)
 
                     logger.info(
@@ -214,6 +218,7 @@ class ModelManager:
                 model_path=str(model_path),
                 training_period=period,
                 success=True,
+                best_params=best_model.get_params(),
             )
 
             logger.info(
@@ -237,6 +242,7 @@ class ModelManager:
         self,
         symbols: list[str] | None = None,
         period: str = "2y",
+        n_iter: int = 10,
     ) -> list[TrainingResult]:
         """Batch train models for multiple symbols.
 
@@ -252,7 +258,7 @@ class ModelManager:
 
         results: list[TrainingResult] = []
         for sym in symbols:
-            result = self.train_model(sym, period=period)
+            result = self.train_model(sym, period=period, n_iter=n_iter)
             results.append(result)
 
         success_count = sum(1 for r in results if r.success)

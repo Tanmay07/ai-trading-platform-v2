@@ -190,9 +190,10 @@ async def get_watchlist() -> dict[str, Any]:
 
     try:
         loop = asyncio.get_running_loop()
-        quotes: dict = await loop.run_in_executor(
+        quotes_list = await loop.run_in_executor(
             None, partial(_market_svc.get_multiple_quotes, symbols)
         )
+        quotes = {q["symbol"]: q for q in quotes_list}
 
         watchlist: list[dict] = []
         for sym in symbols:
@@ -226,9 +227,10 @@ async def get_sectors() -> dict[str, Any]:
             all_symbols.extend(syms)
             
         loop = asyncio.get_running_loop()
-        quotes: dict = await loop.run_in_executor(
+        quotes_list = await loop.run_in_executor(
             None, partial(_market_svc.get_multiple_quotes, all_symbols)
         )
+        quotes = {q["symbol"]: q for q in quotes_list}
         
         result = {}
         for sector, syms in sectors.items():
@@ -244,6 +246,28 @@ async def get_sectors() -> dict[str, Any]:
     except Exception as exc:
         logger.error("Error fetching sectors: %s", exc, exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to fetch sectors: {exc}")
+
+
+@router.post("/sectors/refresh")
+async def refresh_sectors() -> dict[str, Any]:
+    """Force refresh the market universe sector mapping by scraping Wikipedia.
+    
+    Returns:
+        JSON with the refreshed sector mapping.
+    """
+    logger.info("POST /market/sectors/refresh")
+    try:
+        loop = asyncio.get_running_loop()
+        new_sectors = await loop.run_in_executor(
+            None, _screener_svc.universe_fetcher.refresh_universe_cache
+        )
+        return {
+            "message": "Universe refreshed successfully",
+            "sectors": new_sectors
+        }
+    except Exception as exc:
+        logger.error("Error refreshing sectors: %s", exc, exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to refresh universe: {exc}")
 
 # ------------------------------------------------------------------
 # Helpers
