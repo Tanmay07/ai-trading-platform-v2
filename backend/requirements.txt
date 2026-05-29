@@ -39,12 +39,11 @@ feedparser>=6.0
 # transformers>=4.40.0
 # torch>=2.3.0
 
-# --- Phase 3: ML Prediction Models (uncomment when needed) ---
-# scikit-learn>=1.8.0
-# xgboost>=3.2.0
-# lightgbm>=4.6.0
-# catboost>=1.2.10
-# shap>=0.51.0
+# --- Phase 3: ML Prediction Models ---
+scikit-learn>=1.8.0
+xgboost>=3.2.0
+lightgbm>=4.6.0
+joblib>=1.4.0
 
 # --- Phase 4: Backtesting Engine (uncomment when needed) ---
 # vectorbt>=1.0.0

@@ -76,11 +76,13 @@ from app.api.market_routes import router as market_router       # noqa: E402
 from app.api.portfolio_routes import router as portfolio_router  # noqa: E402
 from app.api.prediction_routes import router as prediction_router  # noqa: E402
 from app.api.sentiment_routes import router as sentiment_router  # noqa: E402
+from app.api.ml_routes import router as ml_router                # noqa: E402
 
 app.include_router(market_router, prefix="/market", tags=["Market Data"])
 app.include_router(portfolio_router, prefix="/portfolio", tags=["Portfolio"])
 app.include_router(prediction_router, prefix="/predictions", tags=["Predictions"])
 app.include_router(sentiment_router, prefix="/sentiment", tags=["Sentiment"])
+app.include_router(ml_router, prefix="/ml", tags=["ML"])
 
 
 # ── Root Endpoints ────────────────────────────────────────────

@@ -447,6 +447,7 @@ class TestStrategySentimentIntegration:
             + strategy.VOLUME_WEIGHT
             + strategy.VOLATILITY_WEIGHT
             + strategy.SENTIMENT_WEIGHT
+            + strategy.ML_WEIGHT
         )
         assert total == pytest.approx(1.0, abs=0.001)
 

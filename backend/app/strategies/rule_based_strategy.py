@@ -23,23 +23,25 @@ class RuleBasedStrategy:
          0 = neutral
         +1 = strongly bullish
 
-    The strategy evaluates five independent dimensions and combines them
+    The strategy evaluates six independent dimensions and combines them
     into a weighted composite score.
 
-    Weights (Phase 2):
-        - Trend:      32%  (most reliable in trending markets)
-        - Momentum:   27%  (confirms trend direction)
-        - Volume:     18%  (validates price moves)
-        - Volatility: 13%  (risk-adjusted overlay)
-        - Sentiment:  10%  (news sentiment from NLP analysis)
+    Weights (Phase 3):
+        - Trend:      27%  (most reliable in trending markets)
+        - Momentum:   23%  (confirms trend direction)
+        - Volume:     15%  (validates price moves)
+        - Volatility: 11%  (risk-adjusted overlay)
+        - Sentiment:   9%  (news sentiment from NLP analysis)
+        - ML:         15%  (gradient-boosted model predictions)
     """
 
     # Weights for combining signal dimensions
-    TREND_WEIGHT: float = 0.32
-    MOMENTUM_WEIGHT: float = 0.27
-    VOLUME_WEIGHT: float = 0.18
-    VOLATILITY_WEIGHT: float = 0.13
-    SENTIMENT_WEIGHT: float = 0.10
+    TREND_WEIGHT: float = 0.27
+    MOMENTUM_WEIGHT: float = 0.23
+    VOLUME_WEIGHT: float = 0.15
+    VOLATILITY_WEIGHT: float = 0.11
+    SENTIMENT_WEIGHT: float = 0.09
+    ML_WEIGHT: float = 0.15
 
     def __init__(self) -> None:
         self.logger = get_logger(__name__)
@@ -52,6 +54,7 @@ class RuleBasedStrategy:
         self,
         df: pd.DataFrame,
         sentiment_data: dict | None = None,
+        ml_prediction: dict | None = None,
     ) -> dict:
         """Analyze a DataFrame with pre-computed features and return signal components.
 
@@ -63,7 +66,9 @@ class RuleBasedStrategy:
                 produced by :class:`FeaturePipeline`.
             sentiment_data: Optional sentiment feature dict from
                 :class:`SentimentFeatures`.  If provided, sentiment is
-                included as a fifth signal dimension.
+                included as a signal dimension.
+            ml_prediction: Optional ML prediction dict with keys
+                ``direction``, ``probability``, ``confidence``.
 
         Returns:
             Dictionary with keys:
@@ -72,6 +77,7 @@ class RuleBasedStrategy:
                 - ``volume_signal``     (float, -1 to 1)
                 - ``volatility_signal`` (float, -1 to 1)
                 - ``sentiment_signal``  (float, -1 to 1)
+                - ``ml_signal``         (float, -1 to 1)
                 - ``combined_score``    (float, weighted average)
                 - ``signal_details``    (dict, detailed breakdown)
         """
@@ -91,6 +97,7 @@ class RuleBasedStrategy:
         volume_score, volume_reasons = self._assess_volume(row)
         volatility_score, volatility_reasons = self._assess_volatility(row)
         sentiment_score, sentiment_reasons = self._assess_sentiment(sentiment_data)
+        ml_score, ml_reasons = self._assess_ml_prediction(ml_prediction)
 
         # Weighted combination
         combined_score: float = (
@@ -99,6 +106,7 @@ class RuleBasedStrategy:
             + volume_score * self.VOLUME_WEIGHT
             + volatility_score * self.VOLATILITY_WEIGHT
             + sentiment_score * self.SENTIMENT_WEIGHT
+            + ml_score * self.ML_WEIGHT
         )
 
         # Clamp to [-1, 1]
@@ -110,16 +118,18 @@ class RuleBasedStrategy:
             "volume": {"score": round(volume_score, 4), "reasons": volume_reasons},
             "volatility": {"score": round(volatility_score, 4), "reasons": volatility_reasons},
             "sentiment": {"score": round(sentiment_score, 4), "reasons": sentiment_reasons},
+            "ml": {"score": round(ml_score, 4), "reasons": ml_reasons},
         }
 
         self.logger.debug(
             "Signals — trend=%.3f  momentum=%.3f  volume=%.3f  "
-            "volatility=%.3f  sentiment=%.3f  combined=%.3f",
+            "volatility=%.3f  sentiment=%.3f  ml=%.3f  combined=%.3f",
             trend_score,
             momentum_score,
             volume_score,
             volatility_score,
             sentiment_score,
+            ml_score,
             combined_score,
         )
 
@@ -129,6 +139,7 @@ class RuleBasedStrategy:
             "volume_signal": round(volume_score, 4),
             "volatility_signal": round(volatility_score, 4),
             "sentiment_signal": round(sentiment_score, 4),
+            "ml_signal": round(ml_score, 4),
             "combined_score": round(combined_score, 4),
             "signal_details": signal_details,
         }
@@ -501,6 +512,68 @@ class RuleBasedStrategy:
         return score_val, reasons
 
     # ------------------------------------------------------------------
+    # ML prediction assessment (Phase 3)
+    # ------------------------------------------------------------------
+
+    def _assess_ml_prediction(
+        self, ml_prediction: dict | None
+    ) -> tuple[float, list[str]]:
+        """Assess the ML model prediction signal.
+
+        Maps an ML prediction (direction + probability + confidence)
+        into a normalised signal in ``[-1, 1]``.
+
+        Args:
+            ml_prediction: Prediction dict with keys:
+                ``direction`` (str), ``probability`` (float),
+                ``confidence`` (float).
+
+        Returns:
+            Tuple of ``(score, reasons)``.
+        """
+        if not ml_prediction:
+            return 0.0, ["No ML model available"]
+
+        direction = ml_prediction.get("direction", "NEUTRAL")
+        probability = ml_prediction.get("probability", 0.0)
+        confidence = ml_prediction.get("confidence", 0.0)
+
+        # Map direction to base signal
+        if direction == "UP":
+            base = 1.0
+        elif direction == "DOWN":
+            base = -1.0
+        else:
+            base = 0.0
+
+        # Scale by confidence (0–1) to avoid overweighting weak predictions
+        score = base * confidence
+        score = float(np.clip(score, -1.0, 1.0))
+
+        reasons: list[str] = []
+        if abs(score) > 0.5:
+            reasons.append(
+                f"ML predicts {direction} with high confidence "
+                f"(prob={probability:.1%}, confidence={confidence:.1%})"
+            )
+        elif abs(score) > 0.2:
+            reasons.append(
+                f"ML predicts {direction} with moderate confidence "
+                f"(prob={probability:.1%}, confidence={confidence:.1%})"
+            )
+        elif direction == "NEUTRAL":
+            reasons.append(
+                f"ML predicts NEUTRAL (prob={probability:.1%})"
+            )
+        else:
+            reasons.append(
+                f"ML predicts {direction} with low confidence "
+                f"(prob={probability:.1%}, confidence={confidence:.1%})"
+            )
+
+        return score, reasons
+
+    # ------------------------------------------------------------------
     # Utility helpers
     # ------------------------------------------------------------------
 
@@ -530,6 +603,7 @@ class RuleBasedStrategy:
             "volume_signal": 0.0,
             "volatility_signal": 0.0,
             "sentiment_signal": 0.0,
+            "ml_signal": 0.0,
             "combined_score": 0.0,
             "signal_details": {
                 "trend": {"score": 0.0, "reasons": ["Insufficient data"]},
@@ -537,5 +611,6 @@ class RuleBasedStrategy:
                 "volume": {"score": 0.0, "reasons": ["Insufficient data"]},
                 "volatility": {"score": 0.0, "reasons": ["Insufficient data"]},
                 "sentiment": {"score": 0.0, "reasons": ["No sentiment data"]},
+                "ml": {"score": 0.0, "reasons": ["No ML model"]},
             },
         }

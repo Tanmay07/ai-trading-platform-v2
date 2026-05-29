@@ -95,6 +95,7 @@ models/*.pkl
 models/*.joblib
 models/*.h5
 models/*.pt
+ml_models/
 
 # =========================
 # Logs

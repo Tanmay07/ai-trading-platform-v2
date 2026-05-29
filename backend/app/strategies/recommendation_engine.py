@@ -1,9 +1,9 @@
 """
-Recommendation Engine — combines rule-based signals, feature engineering,
-and risk metrics to produce actionable BUY / SELL / HOLD recommendations.
+Recommendation Engine — combines rule-based signals, ML predictions,
+sentiment analysis, and risk metrics to produce actionable
+BUY / SELL / HOLD recommendations.
 
-Phase 1 uses only rule-based scoring.  Phase 3 will add ML model predictions
-and sentiment analysis.
+Phase 3 adds ML model predictions alongside rule-based scoring.
 
 DISCLAIMER: This is for educational and research purposes only, not financial advice.
 """
@@ -20,6 +20,7 @@ from app.data.historical_data_service import HistoricalDataService
 from app.data.market_data_service import MarketDataService
 from app.features.feature_pipeline import FeaturePipeline
 from app.features.sentiment_features import SentimentFeatures
+from app.ml.model_manager import ModelManager
 from app.strategies.rule_based_strategy import RuleBasedStrategy
 from app.utils.helpers import DISCLAIMER, get_ist_now, validate_symbol
 from app.utils.logger import get_logger
@@ -49,6 +50,7 @@ class RecommendationEngine:
         self.market_data = MarketDataService()
         self.historical_data = HistoricalDataService(market_data_service=self.market_data)
         self.sentiment_features = SentimentFeatures()
+        self.model_manager = ModelManager()
         self.logger = get_logger(__name__)
 
     # ------------------------------------------------------------------
@@ -94,15 +96,36 @@ class RecommendationEngine:
             # 2. Compute features
             df_features: pd.DataFrame = self.feature_pipeline.compute_all_features(df)
 
-            # 3. Run rule-based strategy with sentiment
-            # Fetch sentiment features
+            # 3. Fetch sentiment features
             try:
                 sentiment_data = self.sentiment_features.compute_sentiment_features(symbol)
             except Exception as exc:
                 self.logger.warning("Sentiment fetch failed for %s: %s", symbol, exc)
                 sentiment_data = None
 
-            signals: dict = self.strategy.analyze(df_features, sentiment_data=sentiment_data)
+            # 3b. Fetch ML prediction (if model exists)
+            ml_data: dict | None = None
+            ml_probability: dict | None = None
+            try:
+                ml_result = self.model_manager.predict(symbol, df_features=df_features)
+                if ml_result is not None:
+                    ml_data = ml_result.to_dict()
+                    ml_probability = {
+                        "direction": ml_result.direction,
+                        "probability": round(ml_result.probability, 4),
+                        "confidence": round(ml_result.confidence, 4),
+                        "probabilities": ml_result.probabilities,
+                        "model_name": ml_result.model_name,
+                    }
+            except Exception as exc:
+                self.logger.warning("ML prediction failed for %s: %s", symbol, exc)
+
+            # 4. Run hybrid strategy (rule-based + sentiment + ML)
+            signals: dict = self.strategy.analyze(
+                df_features,
+                sentiment_data=sentiment_data,
+                ml_prediction=ml_data,
+            )
 
             # 4. Determine current price
             if current_price is None:
@@ -123,9 +146,9 @@ class RecommendationEngine:
             confidence = self._score_to_confidence(combined)
             risk_label = self._map_risk_score(volatility, combined)
 
-            # 7. Collect reasons (including sentiment)
+            # 7. Collect reasons (including sentiment & ML)
             all_reasons: list[str] = []
-            for dim in ("trend", "momentum", "volume", "volatility", "sentiment"):
+            for dim in ("trend", "momentum", "volume", "volatility", "sentiment", "ml"):
                 all_reasons.extend(signals["signal_details"][dim]["reasons"])
 
             # 8. Supporting indicator snapshot
@@ -154,7 +177,7 @@ class RecommendationEngine:
                 "reasons": all_reasons,
                 "supporting_indicators": supporting,
                 "sentiment_summary": sentiment_summary,
-                "model_probability": None,    # Phase 1 — no ML yet
+                "model_probability": ml_probability,
                 "suggested_stop_loss": round(stop_loss, 2),
                 "suggested_target": round(target, 2),
                 "time_horizon": "1–2 weeks (swing trade)",

@@ -17,8 +17,8 @@ Provides technical analysis, portfolio management, and ML-based predictions — 
 | **Database**   | SQLite (via SQLAlchemy ORM)                       |
 | **Market Data**| yfinance (Yahoo Finance API)                      |
 | **Analysis**   | pandas, NumPy, Technical Indicators               |
-| **ML (Phase 3)** | scikit-learn, XGBoost, LightGBM, CatBoost      |
 | **NLP (Phase 2)** | VADER Sentiment, FinBERT (opt-in)             |
+| **ML (Phase 3)**  | scikit-learn, XGBoost, LightGBM                |
 
 ---
 
@@ -97,6 +97,15 @@ Interactive docs at **http://127.0.0.1:8000/docs**
 | GET    | `/{symbol}/articles`      | Recent news with sentiment scores  |
 | GET    | `/market/overview`        | Market-wide sentiment overview     |
 
+### ML (`/api/v1/ml`)
+| Method | Endpoint                  | Description                        |
+|--------|---------------------------|------------------------------------|
+| POST   | `/train/{symbol}`         | Train ML models for a stock        |
+| POST   | `/train-all`              | Batch train for entire watchlist   |
+| GET    | `/predict/{symbol}`       | Get ML prediction (UP/DOWN/NEUTRAL)|
+| GET    | `/status/{symbol}`        | Model training status & metrics    |
+| GET    | `/status`                 | Status for all trained models      |
+
 ---
 
 ## 🗂️ Project Structure
@@ -118,7 +127,8 @@ ai-trading-platform/
 │       │   ├── market_routes.py
 │       │   ├── portfolio_routes.py
 │       │   ├── prediction_routes.py
-│       │   └── sentiment_routes.py     # Phase 2: Sentiment API
+│       │   ├── sentiment_routes.py     # Phase 2: Sentiment API
+│       │   └── ml_routes.py            # Phase 3: ML API
 │       ├── data/                # Market data & news services
 │       │   ├── market_data_service.py
 │       │   ├── live_data_service.py
@@ -131,6 +141,10 @@ ai-trading-platform/
 │       │   ├── feature_pipeline.py
 │       │   ├── sentiment_analyzer.py   # Phase 2: VADER/FinBERT NLP
 │       │   └── sentiment_features.py   # Phase 2: Sentiment features
+│       ├── ml/                  # Machine learning pipeline
+│       │   ├── ml_data_preparer.py     # Phase 3: Feature + label prep
+│       │   ├── models.py               # Phase 3: XGBoost/LightGBM/Ensemble
+│       │   └── model_manager.py        # Phase 3: Train/predict orchestrator
 │       ├── strategies/          # Trading strategy logic
 │       │   ├── rule_based_strategy.py
 │       │   └── recommendation_engine.py
@@ -149,7 +163,7 @@ ai-trading-platform/
 
 - [x] **Phase 1**: Core infrastructure, market data, technical analysis, portfolio management
 - [x] **Phase 2**: News sentiment analysis (NLP), multi-source news aggregation
-- [ ] **Phase 3**: ML prediction models (XGBoost, LightGBM, ensemble)
+- [x] **Phase 3**: ML prediction models (XGBoost, LightGBM, ensemble)
 - [ ] **Phase 4**: Backtesting engine, strategy optimization
 - [ ] **Phase 5**: Frontend dashboard, real-time WebSocket updates
 
