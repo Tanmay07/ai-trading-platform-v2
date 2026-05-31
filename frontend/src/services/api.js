@@ -14,6 +14,21 @@ export const getMarketSummary = async () => {
   return response.data;
 };
 
+export const addPortfolioHolding = async (data) => {
+  const response = await api.post('/portfolio', data);
+  return response.data;
+};
+
+export const updatePortfolioHolding = async (symbol, data) => {
+  const response = await api.put(`/portfolio/${symbol}`, data);
+  return response.data;
+};
+
+export const deletePortfolioHolding = async (symbol) => {
+  const response = await api.delete(`/portfolio/${symbol}`);
+  return response.data;
+};
+
 export const getMarketHistory = async (symbol) => {
   const response = await api.get(`/market/history/${symbol}?period=1y`);
   return response.data;

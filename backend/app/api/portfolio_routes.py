@@ -44,6 +44,15 @@ class AddHoldingRequest(BaseModel):
     notes: str | None = Field(None, description="Optional notes")
 
 
+class UpdateHoldingRequest(BaseModel):
+    """Request body for updating an existing portfolio holding."""
+
+    quantity: int = Field(..., gt=0, description="New number of shares")
+    buy_price: float = Field(..., gt=0, description="New average purchase price (INR)")
+    sector: str | None = Field(None, description="Sector classification")
+    notes: str | None = Field(None, description="Optional notes")
+
+
 class HoldingResponse(BaseModel):
     """Serialised portfolio holding."""
 
@@ -122,6 +131,50 @@ async def get_portfolio() -> dict[str, Any]:
     except Exception as exc:
         logger.error("Error fetching portfolio: %s", exc, exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to fetch portfolio: {exc}")
+
+
+@router.put("/{symbol}")
+async def update_holding(
+    symbol: str,
+    request: UpdateHoldingRequest,
+) -> dict[str, Any]:
+    """Update an existing holding in the portfolio.
+    
+    This overwrites the quantity and average buy price explicitly.
+    """
+    symbol = validate_symbol(symbol)
+    logger.info(
+        "PUT /portfolio/%s — qty=%d price=%.2f",
+        symbol,
+        request.quantity,
+        request.buy_price,
+    )
+
+    try:
+        holding = _portfolio_svc.update_holding(
+            symbol=symbol,
+            quantity=request.quantity,
+            buy_price=request.buy_price,
+            sector=request.sector,
+            notes=request.notes,
+        )
+
+        return {
+            "message": "Holding updated successfully",
+            "holding": {
+                "symbol": holding["symbol"],
+                "quantity": holding["quantity"],
+                "avg_buy_price": holding["avg_buy_price"],
+                "sector": holding.get("sector"),
+                "notes": holding.get("notes"),
+            },
+            "disclaimer": DISCLAIMER,
+        }
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    except Exception as exc:
+        logger.error("Error updating holding: %s", exc, exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to update holding: {exc}")
 
 
 @router.delete("/{symbol}")

@@ -53,7 +53,7 @@ def validate_symbol(symbol: str) -> str:
     'TCS.NS'
     """
     symbol = symbol.strip().upper()
-    if not symbol.endswith(".NS"):
+    if not (symbol.endswith(".NS") or symbol.endswith(".BO")):
         symbol = f"{symbol}.NS"
     return symbol
 

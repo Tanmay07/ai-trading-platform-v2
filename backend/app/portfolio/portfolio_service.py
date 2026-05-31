@@ -89,6 +89,41 @@ class PortfolioService:
         self.record_transaction(symbol, "BUY", quantity, buy_price, notes)
         return holding
 
+    def update_holding(
+        self,
+        symbol: str,
+        quantity: int,
+        buy_price: float,
+        sector: str | None = None,
+        notes: str | None = None,
+    ) -> dict[str, Any]:
+        """Update a holding by explicitly setting its quantity and average buy price.
+        
+        This overrides the existing values rather than computing a weighted average.
+        """
+        if quantity <= 0:
+            raise ValueError("Quantity must be positive.")
+        if buy_price <= 0:
+            raise ValueError("Buy price must be positive.")
+
+        symbol = validate_symbol(symbol)
+        holdings = self._load_holdings()
+
+        if symbol not in holdings:
+            raise ValueError(f"Holding {symbol} not found in portfolio.")
+
+        existing = holdings[symbol]
+        existing["quantity"] = quantity
+        existing["avg_buy_price"] = round(buy_price, 2)
+        existing["updated_at"] = get_ist_now().isoformat()
+        if sector is not None:
+            existing["sector"] = sector
+        if notes is not None:
+            existing["notes"] = notes
+            
+        self._save_holdings(holdings)
+        return existing
+
     def remove_holding(self, symbol: str) -> bool:
         symbol = validate_symbol(symbol)
         holdings = self._load_holdings()
