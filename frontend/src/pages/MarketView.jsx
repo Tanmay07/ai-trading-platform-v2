@@ -139,25 +139,25 @@ export default function MarketView() {
                     <span style={{ color: 'var(--text-secondary)' }}>Direction:</span>
                     <span style={{ 
                       fontWeight: 'bold', 
-                      color: prediction.prediction.direction === 'UP' ? 'var(--signal-up)' : prediction.prediction.direction === 'DOWN' ? 'var(--signal-down)' : 'var(--signal-neutral)',
-                      background: prediction.prediction.direction === 'UP' ? 'var(--signal-up-bg)' : prediction.prediction.direction === 'DOWN' ? 'var(--signal-down-bg)' : 'var(--signal-neutral-bg)',
+                      color: prediction.prediction.model_probability?.direction === 'UP' ? 'var(--signal-up)' : prediction.prediction.model_probability?.direction === 'DOWN' ? 'var(--signal-down)' : 'var(--signal-neutral)',
+                      background: prediction.prediction.model_probability?.direction === 'UP' ? 'var(--signal-up-bg)' : prediction.prediction.model_probability?.direction === 'DOWN' ? 'var(--signal-down-bg)' : 'var(--signal-neutral-bg)',
                       padding: '0.2rem 0.6rem',
-                      borderRadius: '4px'
+                      borderRadius: 'var(--border-radius-sm)'
                     }}>
-                      {prediction.prediction.direction}
+                      {prediction.prediction.model_probability?.direction || '-'}
                     </span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ color: 'var(--text-secondary)' }}>Confidence:</span>
-                    <span>{(prediction.prediction.confidence * 100).toFixed(1)}%</span>
+                    <span>{prediction.prediction.model_probability?.confidence ? (prediction.prediction.model_probability.confidence * 100).toFixed(1) : 'N/A'}%</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ color: 'var(--text-secondary)' }}>Probability:</span>
-                    <span>{(prediction.prediction.probability * 100).toFixed(1)}%</span>
+                    <span>{prediction.prediction.model_probability?.probability ? (prediction.prediction.model_probability.probability * 100).toFixed(1) : 'N/A'}%</span>
                   </div>
                   <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--glass-border)' }}>
                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '0.5rem' }}>Class Probabilities</p>
-                    {Object.entries(prediction.prediction.probabilities || {}).map(([key, val]) => (
+                    {Object.entries(prediction.prediction.model_probability?.probabilities || {}).map(([key, val]) => (
                       <div key={key} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.25rem' }}>
                         <span>{key}</span>
                         <span>{(val * 100).toFixed(1)}%</span>
@@ -171,36 +171,34 @@ export default function MarketView() {
             </GlassCard>
 
             <GlassCard title="News Sentiment">
-              {sentiment && sentiment.success ? (
+              {sentiment && sentiment.sentiment ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ color: 'var(--text-secondary)' }}>Overall Score:</span>
                     <span style={{ 
                       fontWeight: 'bold',
-                      color: sentiment.sentiment_score > 0 ? 'var(--signal-up)' : sentiment.sentiment_score < 0 ? 'var(--signal-down)' : 'var(--signal-neutral)'
+                      color: sentiment.sentiment.overall_score > 0 ? 'var(--signal-up)' : sentiment.sentiment.overall_score < 0 ? 'var(--signal-down)' : 'var(--signal-neutral)'
                     }}>
-                      {sentiment.sentiment_score > 0 ? '+' : ''}{sentiment.sentiment_score.toFixed(2)}
+                      {sentiment.sentiment.overall_score > 0 ? '+' : ''}{sentiment.sentiment.overall_score.toFixed(2)}
                     </span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ color: 'var(--text-secondary)' }}>Articles Analyzed:</span>
-                    <span>{sentiment.article_count}</span>
+                    <span>{sentiment.sentiment.article_count}</span>
                   </div>
                   
                   <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--glass-border)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Recent Headlines</p>
-                    {sentiment.articles?.slice(0, 3).map((article, idx) => (
-                      <a key={idx} href={article.url} target="_blank" rel="noreferrer" style={{ textDecoration: 'none', color: 'inherit' }}>
-                        <div style={{ padding: '0.75rem', background: 'var(--bg-surface-elevated)', borderRadius: 'var(--border-radius-sm)', transition: 'background 0.2s', ':hover': { background: 'var(--glass-highlight)' } }}>
-                          <p style={{ fontSize: '0.85rem', margin: '0 0 0.4rem 0', fontWeight: '500' }}>{article.title}</p>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                            <span>{new Date(article.published_at * 1000).toLocaleDateString()}</span>
-                            <span style={{ color: article.compound_score > 0 ? 'var(--signal-up)' : article.compound_score < 0 ? 'var(--signal-down)' : 'var(--signal-neutral)' }}>
-                              Score: {article.compound_score.toFixed(2)}
-                            </span>
-                          </div>
+                    {sentiment.sentiment.top_headlines?.slice(0, 3).map((article, idx) => (
+                      <div key={idx} style={{ padding: '0.75rem', background: 'var(--bg-surface-elevated)', borderRadius: 'var(--border-radius-sm)', transition: 'background 0.2s', ':hover': { background: 'var(--glass-highlight)' } }}>
+                        <p style={{ fontSize: '0.85rem', margin: '0 0 0.4rem 0', fontWeight: '500' }}>{article.headline}</p>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                          <span>{article.provider}</span>
+                          <span style={{ color: article.score > 0 ? 'var(--signal-up)' : article.score < 0 ? 'var(--signal-down)' : 'var(--signal-neutral)' }}>
+                            Score: {article.score.toFixed(2)}
+                          </span>
                         </div>
-                      </a>
+                      </div>
                     ))}
                   </div>
                 </div>
