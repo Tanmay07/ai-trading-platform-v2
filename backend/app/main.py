@@ -4,6 +4,7 @@ FastAPI Application Entry Point
 This is for educational and research purposes only, not financial advice.
 """
 
+import asyncio
 from contextlib import asynccontextmanager
 from collections.abc import AsyncGenerator
 
@@ -13,6 +14,7 @@ from fastapi.responses import RedirectResponse
 
 from app import __version__
 from app.config import settings
+from app.discovery.scheduler import scheduled_discovery_scan
 from app.utils.helpers import DISCLAIMER, get_ist_now
 from app.utils.logger import get_logger
 
@@ -27,13 +29,20 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logger.info("🚀 Starting %s v%s", settings.APP_NAME, settings.VERSION)
     logger.info("📋 Debug mode: %s", settings.DEBUG)
 
-    # Database logic migrated to S3 Storage Service
+    # Start the discovery scheduler background task
+    discovery_task = asyncio.create_task(scheduled_discovery_scan(interval_minutes=15))
+
     logger.info("✅ Application started successfully")
 
     yield  # ← application runs here
 
     # ── Shutdown ──────────────────────────────────────────────
     logger.info("🛑 Shutting down %s …", settings.APP_NAME)
+    discovery_task.cancel()
+    try:
+        await discovery_task
+    except asyncio.CancelledError:
+        logger.info("✅ Discovery scheduler stopped")
 
 
 # ── FastAPI Application ──────────────────────────────────────
@@ -78,6 +87,7 @@ from app.api.market_routes import router as market_router       # noqa: E402
 from app.api.portfolio_routes import router as portfolio_router  # noqa: E402
 from app.api.prediction_routes import router as prediction_router  # noqa: E402
 from app.api.sentiment_routes import router as sentiment_router  # noqa: E402
+from app.api.discovery_routes import router as discovery_router  # noqa: E402
 from app.api.ml_routes import router as ml_router                # noqa: E402
 from app.api.backtest_routes import router as backtest_router    # noqa: E402
 from app.api.ws_routes import router as ws_router                # noqa: E402
@@ -85,6 +95,7 @@ app.include_router(market_router, prefix="/market", tags=["Market Data"])
 app.include_router(portfolio_router, prefix="/portfolio", tags=["Portfolio"])
 app.include_router(prediction_router, prefix="/predictions", tags=["Predictions"])
 app.include_router(sentiment_router, prefix="/sentiment", tags=["Sentiment"])
+app.include_router(discovery_router, prefix="/discovery", tags=["Discovery"])
 app.include_router(ml_router, prefix="/ml", tags=["ML"])
 app.include_router(backtest_router, prefix="/backtest", tags=["Backtest"])
 app.include_router(ws_router, prefix="/ws", tags=["WebSocket"])
