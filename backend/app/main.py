@@ -29,8 +29,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logger.info("🚀 Starting %s v%s", settings.APP_NAME, settings.VERSION)
     logger.info("📋 Debug mode: %s", settings.DEBUG)
 
-    # Start the discovery scheduler background task
-    discovery_task = asyncio.create_task(scheduled_discovery_scan(interval_minutes=15))
+    # Start the discovery scheduler background task (once every 24 hours)
+    discovery_task = asyncio.create_task(scheduled_discovery_scan(interval_minutes=1440))
 
     logger.info("✅ Application started successfully")
 

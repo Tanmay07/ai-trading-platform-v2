@@ -41,7 +41,19 @@ async def get_discovery_scan(force_refresh: bool = False):
         finally:
             is_scanning = False
             
-    return {"status": "success", "data": scan_cache}
+    # Try to fetch the bhavcopy date
+    bhavcopy_date_str = None
+    try:
+        from app.discovery.bhavcopy_service import BhavcopyService
+        bhavcopy_date_str = BhavcopyService().get_latest_bhavcopy_date().strftime("%Y-%m-%d")
+    except Exception as e:
+        logger.warning(f"Could not get bhavcopy date: {e}")
+            
+    return {
+        "status": "success", 
+        "data": scan_cache, 
+        "bhavcopy_date": bhavcopy_date_str
+    }
 
 @router.get("/top/{category}")
 async def get_top_opportunities(category: str):

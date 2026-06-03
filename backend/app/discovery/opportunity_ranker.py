@@ -37,9 +37,9 @@ class OpportunityRanker:
 
     async def scan_universe(self, category: str = "all") -> List[Dict[str, Any]]:
         """
-        Scans the Nifty 50 universe (for MVP) and generates Opportunity Scores.
+        Scans the dynamic universe of highly liquid stocks and generates Opportunity Scores.
         """
-        symbols = self.universe.get_nifty_50()
+        symbols = self.universe.get_scan_universe(limit=150)
         
         # Batch download historical data
         hist_data = self.market_service.download_historical_data(symbols, period="1y")

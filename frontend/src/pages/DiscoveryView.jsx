@@ -14,6 +14,7 @@ import axios from 'axios';
 
 const DiscoveryView = () => {
   const [opportunities, setOpportunities] = useState([]);
+  const [bhavcopyDate, setBhavcopyDate] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
   const [isScanning, setIsScanning] = useState(false);
@@ -30,6 +31,7 @@ const DiscoveryView = () => {
         setTimeout(() => fetchOpportunities(), 5000);
       } else {
         setOpportunities(response.data.data || []);
+        setBhavcopyDate(response.data.bhavcopy_date);
         setLoading(false);
         setIsScanning(false);
       }
@@ -44,13 +46,25 @@ const DiscoveryView = () => {
     fetchOpportunities();
   }, []);
 
-  const filteredOpportunities = opportunities.filter(opp => {
-    if (activeTab === 'high_growth') return opp.predicted_return > 5;
-    if (activeTab === 'value') return opp.value_score > 70;
-    if (activeTab === 'momentum') return opp.momentum_score > 70;
-    if (activeTab === 'sentiment') return opp.sentiment_score > 70;
-    return true;
-  });
+  // Instead of filtering out stocks, we sort the entire universe based on the selected tab
+  const getSortedOpportunities = () => {
+    const oppsCopy = [...opportunities];
+    switch(activeTab) {
+      case 'high_growth':
+        return oppsCopy.sort((a, b) => (b.predicted_return || 0) - (a.predicted_return || 0));
+      case 'value':
+        return oppsCopy.sort((a, b) => (b.value_score || 0) - (a.value_score || 0));
+      case 'momentum':
+        return oppsCopy.sort((a, b) => (b.momentum_score || 0) - (a.momentum_score || 0));
+      case 'sentiment':
+        return oppsCopy.sort((a, b) => (b.sentiment_score || 0) - (a.sentiment_score || 0));
+      default:
+        // Default 'all' tab is sorted by the overall opportunity score
+        return oppsCopy.sort((a, b) => (b.opportunity_score || 0) - (a.opportunity_score || 0));
+    }
+  };
+  
+  const sortedOpportunities = getSortedOpportunities();
 
   const getRecommendationColor = (rec) => {
     switch (rec) {
@@ -72,6 +86,7 @@ const DiscoveryView = () => {
           </h1>
           <p style={{ color: 'var(--text-secondary)', margin: 0 }}>
             Continuously scanning the NSE universe to identify high-probability trading opportunities.
+            {bhavcopyDate && <span style={{ marginLeft: '1rem', color: 'var(--accent-primary)', fontWeight: 'bold' }}>• Data loaded for: {bhavcopyDate}</span>}
           </p>
         </div>
         
@@ -135,7 +150,7 @@ const DiscoveryView = () => {
         </div>
       ) : (
         <div style={{ display: 'grid', gap: '1.5rem', gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))' }}>
-          {filteredOpportunities.map((opp) => (
+          {sortedOpportunities.map((opp) => (
             <div key={opp.symbol} style={{
               background: 'var(--glass-surface)',
               border: '1px solid var(--glass-border)',
@@ -149,7 +164,9 @@ const DiscoveryView = () => {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
                   <h3 style={{ margin: '0 0 0.25rem 0', fontSize: '1.25rem', fontWeight: 'bold' }}>{opp.symbol}</h3>
-                  <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>{opp.sector}</div>
+                  <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                    {opp.sector} {opp.current_price && <span>• ₹{opp.current_price.toFixed(2)}</span>}
+                  </div>
                 </div>
                 <div style={{ 
                   padding: '0.25rem 0.75rem', 
@@ -219,7 +236,7 @@ const DiscoveryView = () => {
                   <span style={{ fontWeight: '500' }}>Key Drivers</span>
                 </div>
                 <ul style={{ margin: 0, paddingLeft: '1.25rem' }}>
-                  {opp.explanation?.key_drivers.map((reason, i) => (
+                  {opp.all_reasons?.map((reason, i) => (
                     <li key={i}>{reason}</li>
                   ))}
                 </ul>
