@@ -1,7 +1,7 @@
 # 🇮🇳 AI Trading Platform — Indian Stock Market
 
 An AI-powered trading advisory platform for the Indian stock market (NSE).  
-Provides technical analysis, portfolio management, and ML-based predictions — all in **paper-trading / advisory mode**.
+Provides technical analysis, portfolio management, ML-based predictions, and a continuous **AI Opportunity Discovery Engine** — all in **paper-trading / advisory mode**.
 
 > ⚠️ **DISCLAIMER**: This is for **educational and research purposes only**, not financial advice.  
 > The creators are not responsible for any financial decisions made using this platform.  
@@ -14,11 +14,31 @@ Provides technical analysis, portfolio management, and ML-based predictions — 
 | Layer          | Technology                                      |
 |----------------|--------------------------------------------------|
 | **Backend**    | Python 3.11+, FastAPI, Uvicorn                   |
-| **Database**   | SQLite (via SQLAlchemy ORM)                       |
+| **Database**   | S3 Storage Service, SQLite (via SQLAlchemy ORM)  |
+| **Frontend**   | React (Vite), Lucide Icons                       |
 | **Market Data**| yfinance (Yahoo Finance API)                      |
-| **Analysis**   | pandas, NumPy, Technical Indicators               |
-| **NLP (Phase 2)** | VADER Sentiment, FinBERT (opt-in)             |
-| **ML (Phase 3)**  | scikit-learn, XGBoost, LightGBM                |
+| **Analysis**   | pandas, NumPy, `ta` (Technical Analysis)          |
+| **NLP**        | VADER Sentiment, FinBERT (HuggingFace)            |
+| **ML**         | scikit-learn, XGBoost, LightGBM (Ensembles)      |
+
+---
+
+## 🚀 Key Features
+
+### 1. Portfolio Tracking
+Live P&L tracking, 1y/5d historical charting, sector exposure analysis, and automated market price syncing via Yahoo Finance.
+
+### 2. Market Sentiment Analysis
+Pulls live news articles from GNews and RSS feeds and runs them through a localized instance of **FinBERT** to score the market sentiment for individual stocks as Bearish, Neutral, or Bullish.
+
+### 3. AI Opportunity Discovery Engine
+A comprehensive background scanning engine that continually analyzes the NSE universe. It generates an **Opportunity Score (0-100)** by combining:
+- **Fundamental Engine:** Scores based on ROE, Margins, Debt/Equity, and Growth.
+- **Value Engine:** Identifies fundamentally strong stocks trading near their 52-week lows.
+- **Momentum Engine:** Vectorized calculation of RSI, MACD crossovers, and Bollinger Bands.
+- **Sentiment Engine:** Real-time news NLP processing.
+- **AI Predictor:** Generates probability metrics for a 5%+ return over the next 30 days.
+- **Sector Strength:** Tracks relative momentum across sectors.
 
 ---
 
@@ -27,7 +47,7 @@ Provides technical analysis, portfolio management, and ML-based predictions — 
 ### Prerequisites
 
 ```bash
-# Install system dependencies (needed for LightGBM/XGBoost in later phases)
+# Install system dependencies (needed for LightGBM/XGBoost)
 brew install libomp cmake
 ```
 
@@ -48,138 +68,56 @@ pip install -r requirements.txt
 
 # 4. Configure environment variables
 cp .env.example .env
-# Edit .env with your API keys (optional for Phase 1)
+# Edit .env with your API keys (GNEWS_API_KEY, etc.)
 
-# 5. Start the development server
-uvicorn app.main:app --reload
+# 5. Start the backend server
+uvicorn app.main:app --reload --port 8000
+
+# 6. Start the frontend server (in a new terminal)
+cd ../frontend
+npm install
+npm run dev
 ```
 
+The frontend will be available at **http://localhost:5173**  
 The API will be available at **http://127.0.0.1:8000**  
 Interactive docs at **http://127.0.0.1:8000/docs**
 
 ---
 
-## 📡 API Endpoints
+## 📡 Key API Endpoints
 
-### General
-| Method | Endpoint     | Description              |
-|--------|-------------|--------------------------|
-| GET    | `/`          | Redirect to API docs     |
-| GET    | `/health`    | Health check + version   |
+### Discovery (`/discovery`)
+| Method | Endpoint                  | Description                        |
+|--------|---------------------------|------------------------------------|
+| GET    | `/scan`                   | Get the latest AI Discovery Scan   |
+| GET    | `/top/{category}`         | Filter top opportunities by category (e.g. `high_growth`, `value`, `momentum`) |
 
-### Market Data (`/api/v1/market`)
+### Market Data (`/market`)
 | Method | Endpoint                  | Description                        |
 |--------|---------------------------|------------------------------------|
 | GET    | `/quote/{symbol}`         | Get current price & quote          |
-| GET    | `/ohlcv/{symbol}`         | Get OHLCV historical data          |
-| GET    | `/watchlist`              | Get watchlist with live prices     |
-| GET    | `/info/{symbol}`          | Get detailed stock info            |
+| GET    | `/history/{symbol}`       | Get historical OHLCV data          |
 
-### Portfolio (`/api/v1/portfolio`)
+### Portfolio (`/portfolio`)
 | Method | Endpoint                  | Description                        |
 |--------|---------------------------|------------------------------------|
-| GET    | `/holdings`               | List all portfolio holdings        |
-| POST   | `/holdings`               | Add a new holding                  |
-| GET    | `/summary`                | Portfolio summary with P&L         |
-| GET    | `/transactions`           | Transaction history                |
+| GET    | `/`                       | List all portfolio holdings        |
+| POST   | `/`                       | Add a new holding                  |
+| DELETE | `/{symbol}`               | Remove a holding                   |
 
-### Predictions (`/api/v1/predictions`)
+### Predictions & Sentiment
 | Method | Endpoint                  | Description                        |
 |--------|---------------------------|------------------------------------|
-| GET    | `/analyze/{symbol}`       | Get AI analysis & recommendation   |
-| GET    | `/signals/{symbol}`       | Get technical signals              |
-| GET    | `/history`                | Past predictions & outcomes        |
-
-### Sentiment (`/api/v1/sentiment`)
-| Method | Endpoint                  | Description                        |
-|--------|---------------------------|------------------------------------|
-| GET    | `/{symbol}`               | Aggregated sentiment for a stock   |
-| GET    | `/{symbol}/articles`      | Recent news with sentiment scores  |
-| GET    | `/market/overview`        | Market-wide sentiment overview     |
-
-### ML (`/api/v1/ml`)
-| Method | Endpoint                  | Description                        |
-|--------|---------------------------|------------------------------------|
-| POST   | `/train/{symbol}`         | Train ML models for a stock        |
-| POST   | `/train-all`              | Batch train for entire watchlist   |
-| GET    | `/predict/{symbol}`       | Get ML prediction (UP/DOWN/NEUTRAL)|
-| GET    | `/status/{symbol}`        | Model training status & metrics    |
-| GET    | `/status`                 | Status for all trained models      |
-
-### Backtesting (`/api/v1/backtest`)
-| Method | Endpoint                  | Description                        |
-|--------|---------------------------|------------------------------------|
-| POST   | `/run`                    | Run backtest (symbol, date range)  |
-| GET    | `/runs`                   | List history of backtest runs      |
-| GET    | `/runs/{run_id}`          | Detailed metrics and trade history |
+| GET    | `/predictions/{symbol}`   | Get AI recommendation              |
+| GET    | `/sentiment/{symbol}`     | Get FinBERT analysis of recent news|
 
 ---
 
-## 🗂️ Project Structure
+## 🗓️ Roadmap
 
-```
-ai-trading-platform/
-├── README.md
-├── .gitignore
-├── backend/
-│   ├── requirements.txt
-│   ├── .env.example
-│   └── app/
-│       ├── __init__.py
-│       ├── main.py              # FastAPI application entry point
-│       ├── config.py            # Pydantic Settings configuration
-│       ├── database.py          # SQLAlchemy engine & session
-│       ├── models/              # ORM models (portfolio, predictions, backtest, sentiment)
-│       ├── api/                 # FastAPI route handlers
-│       │   ├── market_routes.py
-│       │   ├── portfolio_routes.py
-│       │   ├── prediction_routes.py
-│       │   ├── sentiment_routes.py     # Phase 2: Sentiment API
-│       │   ├── ml_routes.py            # Phase 3: ML API
-│       │   └── backtest_routes.py      # Phase 4: Backtest API
-│       ├── backtest/            # Backtesting Engine
-│       │   ├── __init__.py
-│       │   └── engine.py               # Phase 4: Event-driven simulator
-│       ├── data/                # Market data & news services
-│       │   ├── market_data_service.py
-│       │   ├── live_data_service.py
-│       │   ├── historical_data_service.py
-│       │   └── news_service.py         # Phase 2: Multi-source news
-│       ├── features/            # Feature engineering pipeline
-│       │   ├── technical_features.py
-│       │   ├── volume_features.py
-│       │   ├── volatility_features.py
-│       │   ├── feature_pipeline.py
-│       │   ├── sentiment_analyzer.py   # Phase 2: VADER/FinBERT NLP
-│       │   └── sentiment_features.py   # Phase 2: Sentiment features
-│       ├── ml/                  # Machine learning pipeline
-│       │   ├── ml_data_preparer.py     # Phase 3: Feature + label prep
-│       │   ├── models.py               # Phase 3: XGBoost/LightGBM/Ensemble
-│       │   └── model_manager.py        # Phase 3: Train/predict orchestrator
-│       ├── strategies/          # Trading strategy logic
-│       │   ├── rule_based_strategy.py
-│       │   └── recommendation_engine.py
-│       ├── portfolio/           # Portfolio management
-│       │   ├── portfolio_service.py
-│       │   └── risk_analyzer.py
-│       └── utils/               # Shared utilities
-│           ├── logger.py
-│           └── helpers.py
-└── frontend/                    # (Future: React/Next.js dashboard)
-```
-
----
-
-## 🛣️ Roadmap
-
-- [x] **Phase 1**: Core infrastructure, market data, technical analysis, portfolio management
-- [x] **Phase 2**: News sentiment analysis (NLP), multi-source news aggregation
-- [x] **Phase 3**: ML prediction models (XGBoost, LightGBM, ensemble)
-- [x] **Phase 4**: Backtesting engine, strategy optimization
-- [x] **Phase 5**: Frontend dashboard, real-time WebSocket updates
-
----
-
-## 📜 License
-
-This project is for educational and research purposes only.
+- [x] Phase 1: Portfolio sync and Market Data ingestion
+- [x] Phase 2: Sentiment analysis via FinBERT and LLMs
+- [x] Phase 3: LightGBM / XGBoost ensemble prediction models
+- [x] Phase 4: AI Opportunity Discovery Background Scanner
+- [ ] Phase 5: Live Trading API integrations (Broker APIs)
