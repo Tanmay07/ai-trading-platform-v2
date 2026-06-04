@@ -207,12 +207,16 @@ class RecommendationEngine:
                 "quantity": h.get("quantity", 0),
                 "avg_buy_price": h.get("avg_buy_price", 0.0),
             }
-            rec = self.get_recommendation(
-                symbol=symbol,
-                current_price=h.get("current_price"),
-                holding=holding_ctx,
-            )
-            recommendations.append(rec)
+            try:
+                rec = self.get_recommendation(
+                    symbol=symbol,
+                    current_price=h.get("current_price"),
+                    holding=holding_ctx,
+                )
+                recommendations.append(rec)
+            except Exception as e:
+                self.logger.error(f"Error processing recommendation for {symbol}: {e}")
+                recommendations.append(self._empty_recommendation(symbol))
         return recommendations
 
     def get_watchlist_recommendations(self, symbols: list[str]) -> list[dict]:

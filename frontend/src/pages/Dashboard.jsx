@@ -9,9 +9,37 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   
   const [modalState, setModalState] = useState({ isOpen: false, mode: 'add', data: null });
+  const [detailsModal, setDetailsModal] = useState({ isOpen: false, data: null });
   const [formData, setFormData] = useState({ symbol: '', quantity: '', buy_price: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [strategyState, setStrategyState] = useState({ loading: false, done: false, predictions: null, error: null });
+
+  const generateConclusion = (pred) => {
+    if (!pred) return "";
+    const action = pred.action;
+    const score = pred.confidence_score;
+    
+    if (action === 'HOLD') {
+      if (score < 30) {
+        return "The AI is highly uncertain due to heavily conflicting signals. For example, positive price trends might be entirely offset by bearish constraints like dead volume or extreme volatility. The engine recommends holding your current position to avoid getting chopped out, but advises against allocating fresh capital until true conviction returns.";
+      } else {
+        return "The AI recommends a HOLD. The current market conditions for this stock are consolidating or range-bound, lacking a strong directional catalyst to justify a new entry or exit.";
+      }
+    } else if (action === 'BUY') {
+      if (score >= 50) {
+        return "The AI has strong conviction in a BUY signal. There is excellent alignment across price momentum, volume support, and technical indicators suggesting an upward continuation.";
+      } else {
+        return "The AI suggests a cautious BUY. While the technicals lean positive, the conviction is moderate, indicating potential upside but with some lingering risks or missing confirmations.";
+      }
+    } else if (action === 'SELL') {
+      if (score >= 50) {
+        return "The AI strongly recommends a SELL. Multiple technical dimensions indicate severe deterioration. Exiting or reducing the position is advised to protect against further downside risk.";
+      } else {
+        return "The AI leans towards a SELL. The technical structure is weakening, though the immediate downside momentum is moderate. Consider tightening stop-losses.";
+      }
+    }
+    return "The engine has analyzed the technicals and sentiment to generate this recommendation.";
+  };
 
   const loadData = () => {
     setLoading(true);
@@ -190,11 +218,17 @@ export default function Dashboard() {
                     <>
                       <td style={{ padding: '1rem 0.5rem' }}>
                         {pred ? (
-                          <span style={{ 
-                            padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold',
-                            background: pred.action === 'BUY' ? 'rgba(63, 185, 80, 0.2)' : pred.action === 'SELL' ? 'rgba(248, 81, 73, 0.2)' : 'rgba(139, 148, 158, 0.2)',
-                            color: pred.action === 'BUY' ? 'var(--signal-up)' : pred.action === 'SELL' ? 'var(--signal-down)' : 'var(--text-secondary)'
-                          }}>
+                          <span 
+                            onClick={() => setDetailsModal({ isOpen: true, data: pred })}
+                            style={{ 
+                              padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold',
+                              background: pred.action === 'BUY' ? 'rgba(63, 185, 80, 0.2)' : pred.action === 'SELL' ? 'rgba(248, 81, 73, 0.2)' : 'rgba(139, 148, 158, 0.2)',
+                              color: pred.action === 'BUY' ? 'var(--signal-up)' : pred.action === 'SELL' ? 'var(--signal-down)' : 'var(--text-secondary)',
+                              cursor: 'pointer',
+                              display: 'inline-flex', alignItems: 'center', gap: '0.2rem'
+                            }}
+                            title="Click to view AI reasoning"
+                          >
                             {pred.action} ({Math.round(pred.confidence_score)}%)
                           </span>
                         ) : '-'}
@@ -269,6 +303,74 @@ export default function Dashboard() {
                   {isSubmitting ? 'Saving...' : 'Save Holding'}
                 </button>
               </form>
+            </GlassCard>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {detailsModal.isOpen && detailsModal.data && createPortal(
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0, 0, 0, 0.7)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '1rem'
+        }}>
+          <div style={{ width: '100%', maxWidth: '600px', position: 'relative', maxHeight: '90vh', overflowY: 'auto' }}>
+            <GlassCard title={`AI Reasoning: ${detailsModal.data.symbol}`}>
+              <button onClick={() => setDetailsModal({ isOpen: false, data: null })} style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}>
+                <X size={20} />
+              </button>
+              <div style={{ marginTop: '1rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+                  <span style={{
+                    padding: '0.4rem 0.8rem', borderRadius: '4px', fontSize: '1rem', fontWeight: 'bold',
+                    background: detailsModal.data.action === 'BUY' ? 'rgba(63, 185, 80, 0.2)' : detailsModal.data.action === 'SELL' ? 'rgba(248, 81, 73, 0.2)' : 'rgba(139, 148, 158, 0.2)',
+                    color: detailsModal.data.action === 'BUY' ? 'var(--signal-up)' : detailsModal.data.action === 'SELL' ? 'var(--signal-down)' : 'var(--text-secondary)'
+                  }}>
+                    {detailsModal.data.action} ({Math.round(detailsModal.data.confidence_score)}% Conviction)
+                  </span>
+                  <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                    Risk Level: <strong style={{ color: '#fff' }}>{detailsModal.data.risk_score}</strong>
+                  </span>
+                </div>
+
+                <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)' }}>Why? (Key Reasons)</h4>
+                <ul style={{ paddingLeft: '1.2rem', marginBottom: '1.5rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+                  {detailsModal.data.reasons && detailsModal.data.reasons.length > 0 ? (
+                    detailsModal.data.reasons.map((reason, i) => <li key={i}>{reason}</li>)
+                  ) : (
+                    <li>No specific reasons provided by the engine.</li>
+                  )}
+                </ul>
+
+                <div style={{ background: 'var(--bg-surface-elevated)', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem', borderLeft: `4px solid ${detailsModal.data.action === 'BUY' ? 'var(--signal-up)' : detailsModal.data.action === 'SELL' ? 'var(--signal-down)' : '#8b949e'}` }}>
+                  <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)' }}>AI Conclusion</h4>
+                  <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: '1.5', fontSize: '0.95rem' }}>
+                    {generateConclusion(detailsModal.data)}
+                  </p>
+                </div>
+
+                <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)' }}>Sentiment</h4>
+                <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
+                  {detailsModal.data.sentiment_summary || 'N/A (No news data)'}
+                </p>
+
+                <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)' }}>Technical Metrics Snapshot</h4>
+                {detailsModal.data.supporting_indicators ? (
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                    <div><strong>RSI (14):</strong> {detailsModal.data.supporting_indicators.rsi?.toFixed(2)}</div>
+                    <div><strong>MACD Hist:</strong> {detailsModal.data.supporting_indicators.macd_histogram?.toFixed(2)}</div>
+                    <div><strong>SMA 20:</strong> ₹{detailsModal.data.supporting_indicators.sma_20?.toFixed(2)}</div>
+                    <div><strong>SMA 50:</strong> ₹{detailsModal.data.supporting_indicators.sma_50?.toFixed(2)}</div>
+                    <div><strong>SMA 200:</strong> ₹{detailsModal.data.supporting_indicators.sma_200?.toFixed(2)}</div>
+                    <div><strong>Vol Ratio:</strong> {detailsModal.data.supporting_indicators.volume_ratio?.toFixed(2)}x</div>
+                    <div><strong>Target:</strong> ₹{detailsModal.data.suggested_target?.toFixed(2)}</div>
+                    <div><strong>Stop Loss:</strong> ₹{detailsModal.data.suggested_stop_loss?.toFixed(2)}</div>
+                  </div>
+                ) : (
+                  <p style={{ color: 'var(--text-secondary)' }}>No technical metrics available.</p>
+                )}
+              </div>
             </GlassCard>
           </div>
         </div>,

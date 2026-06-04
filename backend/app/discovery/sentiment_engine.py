@@ -28,18 +28,17 @@ class DiscoverySentimentEngine:
                     "reasons": ["No recent news available (neutral sentiment)"]
                 }
             
-            # Analyze each article
-            scored_articles = self.analyzer.analyze_articles(articles)
+            # Analyze all articles
+            aggregated_result = self.analyzer.analyze_articles(articles)
             
-            if not scored_articles:
+            if not aggregated_result or aggregated_result.article_count == 0:
                 return {
                     "sentiment_score": 50.0,
                     "reasons": ["No parsable news available (neutral sentiment)"]
                 }
                 
             # The analyzer output score is between -1 (Bearish) and 1 (Bullish)
-            # Average the compound score
-            avg_score = sum(a.compound_score for a in scored_articles) / len(scored_articles)
+            avg_score = aggregated_result.overall_score
             
             # Map -1 to 1 into 0 to 100
             # -1 -> 0, 0 -> 50, 1 -> 100
@@ -63,7 +62,7 @@ class DiscoverySentimentEngine:
             return {
                 "sentiment_score": round(final_score, 2),
                 "raw_compound": round(avg_score, 4),
-                "article_count": len(scored_articles),
+                "article_count": aggregated_result.article_count,
                 "reasons": reasons
             }
 
