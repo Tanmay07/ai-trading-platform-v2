@@ -74,6 +74,7 @@ class OpportunityRanker:
                 fs = fund_score["fundamental_score"] if fund_score else 50.0
                 vs = val_score["value_score"] if val_score else 50.0
                 ms = mom_score["momentum_score"] if mom_score else 50.0
+                rs = mom_score.get("reversal_score", 50.0) if mom_score else 50.0
                 ss = sec_score["sector_score"] if sec_score else 50.0
                 ns = sent_score["sentiment_score"] if sent_score else 50.0
                 
@@ -92,6 +93,7 @@ class OpportunityRanker:
                     "ai_score": round(ai_score, 2),
                     "fundamental_score": fs,
                     "momentum_score": ms,
+                    "reversal_score": rs,
                     "value_score": vs,
                     "sentiment_score": ns,
                     "sector_score": ss,

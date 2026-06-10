@@ -97,8 +97,43 @@ class MomentumDetector:
             # Clamp score between 0 and 100
             final_score = max(0, min(100, score))
             
+            # --- Reversal / Dip-Buyer Score Calculation ---
+            reversal_score = 50.0
+            
+            # 1. Dip from 50-day High
+            highest_50 = high.rolling(window=50).max().iloc[-1]
+            dip_pct = ((highest_50 - current_close) / highest_50) * 100 if highest_50 > 0 else 0
+            
+            if dip_pct > 15:
+                reversal_score += 15
+                if dip_pct > 30:
+                    reversal_score += 10
+            elif dip_pct < 5:
+                reversal_score -= 15 # Near highs, not a dip setup
+                
+            # 2. RSI Recovery
+            recent_rsis = rsi.iloc[-5:]
+            if any(r < 35 for r in recent_rsis) and current_rsi > 35:
+                reversal_score += 20
+                reasons.append("RSI bounced from oversold levels")
+                
+            # 3. MACD Recovery
+            if current_macd_diff > 0 and macd_diff.iloc[-2] <= 0:
+                reversal_score += 15
+            elif current_macd_diff > macd_diff.iloc[-2] and macd_diff.iloc[-2] < 0:
+                reversal_score += 10 # Improving histogram while negative
+                
+            # 4. Short-term Price Action (higher closes)
+            closes_last_3 = close.iloc[-3:]
+            if closes_last_3.is_monotonic_increasing:
+                reversal_score += 15
+                reasons.append("Recent string of higher closes")
+                
+            final_reversal = max(0, min(100, reversal_score))
+            
             return {
                 "momentum_score": round(final_score, 2),
+                "reversal_score": round(final_reversal, 2),
                 "rsi": round(current_rsi, 2) if not pd.isna(current_rsi) else None,
                 "macd_histogram": round(current_macd_diff, 2) if not pd.isna(current_macd_diff) else None,
                 "sma_20": round(sma_20.iloc[-1], 2) if not pd.isna(sma_20.iloc[-1]) else None,

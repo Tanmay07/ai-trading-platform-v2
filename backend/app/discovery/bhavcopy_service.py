@@ -72,15 +72,27 @@ class BhavcopyService:
             
         except Exception as e:
             logger.error(f"Error extracting liquid stocks from Bhavcopy: {e}")
-            # Fallback to Nifty 50 if Bhavcopy processing fails
-            return self._get_fallback_nifty_50()
+            # Fallback to broader universe if Bhavcopy processing fails
+            return self._get_fallback_universe()
             
-    def _get_fallback_nifty_50(self) -> List[str]:
-        """A fallback list in case Bhavcopy fails completely."""
-        logger.warning("Using hardcoded Nifty 50 as fallback.")
+    def _get_fallback_universe(self) -> List[str]:
+        """A broader fallback list in case Bhavcopy fails completely."""
+        logger.warning("Using hardcoded fallback universe.")
         return [
+            # Large Caps
             "RELIANCE.NS", "TCS.NS", "HDFCBANK.NS", "ICICIBANK.NS", "INFY.NS",
             "ITC.NS", "SBIN.NS", "BHARTIARTL.NS", "BAJFINANCE.NS", "LARSEN.NS",
             "KOTAKBANK.NS", "HINDUNILVR.NS", "AXISBANK.NS", "LT.NS", "TATAMOTORS.NS",
-            "M&M.NS", "ASIANPAINT.NS", "MARUTI.NS", "TATASTEEL.NS", "SUNPHARMA.NS"
+            "M&M.NS", "ASIANPAINT.NS", "MARUTI.NS", "TATASTEEL.NS", "SUNPHARMA.NS",
+            # Growth, Mid, and Small Caps
+            "MTARTECH.NS", "IDEAFORGE.NS", "ZENOTECH.NS", "HAL.NS", "MAZDOCK.NS",
+            "BDL.NS", "KPITTECH.NS", "TATAELXSI.NS", "SUZLON.NS", "ZOMATO.NS",
+            "PAYTM.NS", "NYKAA.NS", "PBFINTECH.NS", "DIXON.NS", "POLYCAB.NS",
+            "KEI.NS", "APARINDS.NS", "RVNL.NS", "IRFC.NS", "IREDA.NS",
+            "JIOFIN.NS", "BSE.NS", "CDSL.NS", "CAMS.NS", "ANGELONE.NS",
+            "MCX.NS", "TITAN.NS", "TRENT.NS", "VBL.NS", "CHOLAFIN.NS",
+            "AUBANK.NS", "IDFCFIRSTB.NS", "SUPREMEIND.NS", "ASTRAL.NS", "PIIND.NS",
+            "SRF.NS", "TATACHEM.NS", "DEEPAKNTR.NS", "NAVINFLUOR.NS", "ESCORTS.NS",
+            "EICHERMOT.NS", "TVSMOTOR.NS", "HEROMOTOCO.NS", "OLECTRA.NS", "CGPOWER.NS",
+            "BHEL.NS", "SIEMENS.NS", "ABB.NS", "THERMAX.NS", "BEL.NS"
         ]

@@ -56,6 +56,8 @@ const DiscoveryView = () => {
         return oppsCopy.sort((a, b) => (b.value_score || 0) - (a.value_score || 0));
       case 'momentum':
         return oppsCopy.sort((a, b) => (b.momentum_score || 0) - (a.momentum_score || 0));
+      case 'reversal':
+        return oppsCopy.sort((a, b) => (b.reversal_score || 0) - (a.reversal_score || 0));
       case 'sentiment':
         return oppsCopy.sort((a, b) => (b.sentiment_score || 0) - (a.sentiment_score || 0));
       default:
@@ -120,6 +122,7 @@ const DiscoveryView = () => {
           { id: 'high_growth', label: 'High Growth', icon: <Zap size={18} /> },
           { id: 'value', label: 'Value Picks (52W Low)', icon: <Briefcase size={18} /> },
           { id: 'momentum', label: 'Momentum Breakouts', icon: <Activity size={18} /> },
+          { id: 'reversal', label: 'Dip-Buyers / Reversals', icon: <Target size={18} /> },
         ].map(tab => (
           <button
             key={tab.id}
@@ -218,6 +221,10 @@ const DiscoveryView = () => {
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
                     <span style={{ color: 'var(--text-secondary)' }}>Sentiment:</span>
                     <span>{opp.sentiment_score}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>Reversal:</span>
+                    <span>{opp.reversal_score !== undefined ? opp.reversal_score : 'N/A'}</span>
                   </div>
                 </div>
               </div>

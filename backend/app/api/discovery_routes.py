@@ -75,6 +75,9 @@ async def get_top_opportunities(category: str):
     elif category == "momentum":
         # Sort by momentum score
         filtered = sorted(scan_cache, key=lambda x: x.get("momentum_score", 0), reverse=True)
+    elif category == "reversal":
+        # Sort by reversal score
+        filtered = sorted(scan_cache, key=lambda x: x.get("reversal_score", 0), reverse=True)
     else:
         # Default sort by overall opportunity score
         filtered = scan_cache
