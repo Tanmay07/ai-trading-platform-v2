@@ -79,4 +79,13 @@ export const getStrategy = async (symbols) => {
   return response.data;
 };
 
+export const getTargetProfitSuggestions = async (target = 5000, maxCapital = null) => {
+  const params = new URLSearchParams();
+  params.append('target', target);
+  if (maxCapital) params.append('max_capital', maxCapital);
+  
+  const response = await api.get(`/suggestions/target-profit?${params.toString()}`);
+  return response.data;
+};
+
 export default api;

@@ -7,10 +7,14 @@ extracts the symbols and their sectors, and caches them in AWS S3.
 """
 
 import json
+import os
+import csv
+from datetime import date, timedelta
 from typing import Dict, List
 
 import requests
 from bs4 import BeautifulSoup
+from jugaad_data.nse import bhavcopy_save
 
 from app.data.s3_service import S3StorageService
 from app.utils.logger import get_logger
@@ -22,72 +26,89 @@ class UniverseFetcherService:
         self.s3_service = S3StorageService()
         self.cache_key = "universe_sectors.json"
 
-    def scrape_nifty50_wiki(self) -> Dict[str, List[str]]:
+    def get_full_universe(self) -> Dict[str, List[str]]:
         """
-        Scrape the NIFTY 50 constituents from Wikipedia.
+        Fetch the entire NSE universe using Bhavcopy.
         
         Returns:
-            Dict mapping sector name to list of symbols (with .NS appended).
+            Dict mapping a dummy sector name to list of symbols (with .NS appended).
         """
-        url = "https://en.wikipedia.org/wiki/NIFTY_50"
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-        }
+        self.logger.info("Fetching full NSE universe using Bhavcopy...")
         
-        self.logger.info("Scraping NIFTY 50 from %s", url)
+        # Try to find a valid bhavcopy within the last 7 days
+        today = date.today()
+        bhavcopy_path = None
         
-        try:
-            response = requests.get(url, headers=headers, timeout=15)
-            response.raise_for_status()
-            soup = BeautifulSoup(response.text, 'html.parser')
-            
-            # Find the constituents table
-            tables = soup.find_all('table', {'id': 'constituents'})
-            if not tables:
-                tables = soup.find_all('table', {'class': 'wikitable'})
-                
-            if not tables:
-                raise ValueError("Could not find the constituents table on Wikipedia")
-                
-            # Iterate to find the correct table
-            sector_map: Dict[str, List[str]] = {}
-            for table in tables:
-                head = [th.text.strip() for th in table.find_all('th')]
-                
-                if 'Symbol' in head:
-                    sym_idx = head.index('Symbol')
-                    
-                    # Find Sector column
-                    sector_idx = -1
-                    for j, h in enumerate(head):
-                        if 'Sector' in h:
-                            sector_idx = j
-                            break
-                            
-                    for row in table.find_all('tr')[1:]:
-                        cols = row.find_all('td')
-                        if len(cols) > sym_idx:
-                            sym = cols[sym_idx].text.strip()
-                            sec = cols[sector_idx].text.strip() if sector_idx != -1 else "Unknown"
-                            
-                            # Standardize sector names slightly
-                            sec = sec.replace("[15]", "").replace("[16]", "").strip()
-                            
-                            if sym:
-                                symbol_ns = f"{sym}.NS"
-                                if sec not in sector_map:
-                                    sector_map[sec] = []
-                                sector_map[sec].append(symbol_ns)
-                    
-                    if sector_map:
-                        self.logger.info("Successfully scraped %d sectors", len(sector_map))
-                        return sector_map
+        # Determine a temp download directory
+        download_dir = os.path.join(os.getcwd(), "data", "temp_bhavcopy")
+        os.makedirs(download_dir, exist_ok=True)
 
-            raise ValueError("Found tables but 'Symbol' column was missing")
-            
-        except Exception as exc:
-            self.logger.error("Failed to scrape NIFTY 50: %s", exc, exc_info=True)
+        for i in range(30, 60): # Search in the past month to avoid recent NSE 404 blocks
+            check_date = today - timedelta(days=i)
+            try:
+                self.logger.info(f"Attempting to download Bhavcopy for {check_date}")
+                bhavcopy_path = bhavcopy_save(check_date, download_dir)
+                if bhavcopy_path and os.path.exists(bhavcopy_path):
+                    # Verify it's actually a CSV and not a 404 HTML page
+                    with open(bhavcopy_path, 'r', encoding='utf-8') as f:
+                        first_line = f.readline()
+                        if "DOCTYPE html" not in first_line and "SYMBOL" in first_line:
+                            self.logger.info(f"Successfully downloaded valid Bhavcopy to {bhavcopy_path}")
+                            break
+                    # If invalid, remove it and try next
+                    os.remove(bhavcopy_path)
+                    bhavcopy_path = None
+            except Exception as e:
+                self.logger.warning(f"Bhavcopy not available for {check_date}: {e}")
+                
+        if not bhavcopy_path or not os.path.exists(bhavcopy_path):
+            # Fallback to a hardcoded known-good date if all else fails
+            try:
+                fallback_date = date(2024, 1, 1)
+                self.logger.info(f"Attempting hardcoded fallback date: {fallback_date}")
+                bhavcopy_path = bhavcopy_save(fallback_date, download_dir)
+            except Exception:
+                raise ValueError("Could not download Bhavcopy. Is network down?")
+
+        symbols = []
+        try:
+            with open(bhavcopy_path, 'r', encoding='utf-8') as f:
+                reader = csv.reader(f)
+                header = next(reader)
+                # Find indices of SYMBOL and SERIES
+                sym_idx = -1
+                ser_idx = -1
+                for i, col in enumerate(header):
+                    col_strip = col.strip()
+                    if col_strip == 'SYMBOL':
+                        sym_idx = i
+                    elif col_strip == 'SERIES':
+                        ser_idx = i
+                
+                if sym_idx == -1 or ser_idx == -1:
+                    raise ValueError("Could not find SYMBOL or SERIES column in Bhavcopy")
+
+                for row in reader:
+                    if len(row) > max(sym_idx, ser_idx):
+                        if row[ser_idx].strip() == 'EQ':
+                            sym = row[sym_idx].strip()
+                            if sym:
+                                symbols.append(f"{sym}.NS")
+        except Exception as e:
+            self.logger.error(f"Failed to parse Bhavcopy CSV: {e}")
             raise
+            
+        # Clean up the downloaded file
+        try:
+            os.remove(bhavcopy_path)
+        except:
+            pass
+
+        if not symbols:
+            raise ValueError("Parsed Bhavcopy but found no EQ symbols")
+
+        self.logger.info(f"Successfully extracted {len(symbols)} symbols from Bhavcopy.")
+        return {"NSE_UNIVERSE": symbols}
 
     def refresh_universe_cache(self) -> Dict[str, List[str]]:
         """
@@ -96,7 +117,7 @@ class UniverseFetcherService:
         Returns:
             The scraped sector mapping dictionary.
         """
-        sector_map = self.scrape_nifty50_wiki()
+        sector_map = self.get_full_universe()
         
         if not sector_map:
             raise ValueError("Scraping returned an empty map")

@@ -30,7 +30,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logger.info("📋 Debug mode: %s", settings.DEBUG)
 
     # Start the discovery scheduler background task (once every 24 hours)
-    discovery_task = asyncio.create_task(scheduled_discovery_scan(interval_minutes=1440))
+    # discovery_task = asyncio.create_task(scheduled_discovery_scan(interval_minutes=1440))
 
     logger.info("✅ Application started successfully")
 
@@ -38,9 +38,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # ── Shutdown ──────────────────────────────────────────────
     logger.info("🛑 Shutting down %s …", settings.APP_NAME)
-    discovery_task.cancel()
+    # discovery_task.cancel()
     try:
-        await discovery_task
+        # await discovery_task
+        pass
     except asyncio.CancelledError:
         logger.info("✅ Discovery scheduler stopped")
 
@@ -91,7 +92,9 @@ from app.api.discovery_routes import router as discovery_router  # noqa: E402
 from app.api.ml_routes import router as ml_router                # noqa: E402
 from app.api.backtest_routes import router as backtest_router    # noqa: E402
 from app.api.ws_routes import router as ws_router                # noqa: E402
+from app.api.suggestion_routes import router as suggestion_router # noqa: E402
 app.include_router(market_router, prefix="/market", tags=["Market Data"])
+app.include_router(suggestion_router, prefix="/suggestions", tags=["Suggestions"])
 app.include_router(portfolio_router, prefix="/portfolio", tags=["Portfolio"])
 app.include_router(prediction_router, prefix="/predictions", tags=["Predictions"])
 app.include_router(sentiment_router, prefix="/sentiment", tags=["Sentiment"])

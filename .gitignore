@@ -108,3 +108,8 @@ logs/
 # =========================
 *.bak
 *.tmp
+
+backend/data/
+backend/cm*.csv
+data/
+

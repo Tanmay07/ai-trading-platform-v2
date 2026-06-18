@@ -28,18 +28,25 @@ class S3StorageService:
             except Exception as e:
                 logger.error(f"Failed to initialize S3 client: {e}")
         else:
-            logger.warning("AWS Credentials not fully configured. S3StorageService will be disabled.")
+            logger.warning("AWS Credentials not fully configured. Using local filesystem fallback.")
+            # Use absolute path based on this file's location to avoid getcwd issues
+            base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+            self.local_dir = os.path.join(base_dir, "data", "s3_mock")
+            os.makedirs(self.local_dir, exist_ok=True)
 
     def _is_configured(self) -> bool:
         return self.s3_client is not None
 
     def upload_json(self, object_key: str, data: Any) -> bool:
         """Uploads a dictionary or list to S3 as a JSON file."""
+        json_str = json.dumps(data, default=str)
         if not self._is_configured():
-            return False
+            local_path = os.path.join(self.local_dir, object_key.replace('/', '_'))
+            with open(local_path, 'w') as f:
+                f.write(json_str)
+            return True
             
         try:
-            json_str = json.dumps(data, default=str)
             self.s3_client.put_object(
                 Bucket=self.bucket,
                 Key=object_key,
@@ -55,6 +62,10 @@ class S3StorageService:
     def download_json(self, object_key: str) -> Optional[Any]:
         """Downloads a JSON file from S3 and parses it."""
         if not self._is_configured():
+            local_path = os.path.join(self.local_dir, object_key.replace('/', '_'))
+            if os.path.exists(local_path):
+                with open(local_path, 'r') as f:
+                    return json.loads(f.read())
             return None
             
         try:
