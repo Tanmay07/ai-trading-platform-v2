@@ -136,33 +136,42 @@ export default function MarketView() {
               {prediction && prediction.prediction ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ color: 'var(--text-secondary)' }}>Direction:</span>
+                    <span style={{ color: 'var(--text-secondary)' }}>Verdict:</span>
                     <span style={{ 
                       fontWeight: 'bold', 
-                      color: prediction.prediction.model_probability?.direction === 'UP' ? 'var(--signal-up)' : prediction.prediction.model_probability?.direction === 'DOWN' ? 'var(--signal-down)' : 'var(--signal-neutral)',
-                      background: prediction.prediction.model_probability?.direction === 'UP' ? 'var(--signal-up-bg)' : prediction.prediction.model_probability?.direction === 'DOWN' ? 'var(--signal-down-bg)' : 'var(--signal-neutral-bg)',
+                      color: prediction.prediction.action.includes('BUY') ? 'var(--signal-up)' : prediction.prediction.action.includes('SELL') || prediction.prediction.action === 'CUT LOSSES' ? 'var(--signal-down)' : prediction.prediction.action === 'AVERAGE DOWN' ? 'var(--accent-primary)' : 'var(--signal-neutral)',
+                      background: prediction.prediction.action.includes('BUY') ? 'var(--signal-up-bg)' : prediction.prediction.action.includes('SELL') || prediction.prediction.action === 'CUT LOSSES' ? 'var(--signal-down-bg)' : prediction.prediction.action === 'AVERAGE DOWN' ? 'rgba(88, 166, 255, 0.2)' : 'var(--signal-neutral-bg)',
                       padding: '0.2rem 0.6rem',
                       borderRadius: 'var(--border-radius-sm)'
                     }}>
-                      {prediction.prediction.model_probability?.direction || '-'}
+                      {prediction.prediction.action}
                     </span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ color: 'var(--text-secondary)' }}>Confidence:</span>
-                    <span>{prediction.prediction.model_probability?.confidence ? (prediction.prediction.model_probability.confidence * 100).toFixed(1) : 'N/A'}%</span>
+                    <span>{prediction.prediction.confidence_score}%</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ color: 'var(--text-secondary)' }}>Probability:</span>
-                    <span>{prediction.prediction.model_probability?.probability ? (prediction.prediction.model_probability.probability * 100).toFixed(1) : 'N/A'}%</span>
+                    <span style={{ color: 'var(--text-secondary)' }}>Risk Level:</span>
+                    <span>{prediction.prediction.risk_score}</span>
                   </div>
-                  <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--glass-border)' }}>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '0.5rem' }}>Class Probabilities</p>
-                    {Object.entries(prediction.prediction.model_probability?.probabilities || {}).map(([key, val]) => (
-                      <div key={key} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.25rem' }}>
-                        <span>{key}</span>
-                        <span>{(val * 100).toFixed(1)}%</span>
-                      </div>
-                    ))}
+                  
+                  {prediction.prediction.model_probability && (
+                    <div style={{ marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid var(--glass-border)' }}>
+                      <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '0.5rem' }}>ML Probabilities</p>
+                      {Object.entries(prediction.prediction.model_probability.probabilities || {}).map(([key, val]) => (
+                        <div key={key} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.25rem' }}>
+                          <span>{key}</span>
+                          <span>{(val * 100).toFixed(1)}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div style={{ marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid var(--glass-border)' }}>
+                    <p style={{ fontSize: '0.85rem', lineHeight: '1.4', color: 'var(--text-primary)' }}>
+                      {prediction.prediction.conclusion}
+                    </p>
                   </div>
                 </div>
               ) : (
@@ -189,17 +198,21 @@ export default function MarketView() {
                   
                   <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--glass-border)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Recent Headlines</p>
-                    {sentiment.sentiment.top_headlines?.slice(0, 3).map((article, idx) => (
-                      <div key={idx} style={{ padding: '0.75rem', background: 'var(--bg-surface-elevated)', borderRadius: 'var(--border-radius-sm)', transition: 'background 0.2s', ':hover': { background: 'var(--glass-highlight)' } }}>
-                        <p style={{ fontSize: '0.85rem', margin: '0 0 0.4rem 0', fontWeight: '500' }}>{article.headline}</p>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                          <span>{article.provider}</span>
-                          <span style={{ color: article.score > 0 ? 'var(--signal-up)' : article.score < 0 ? 'var(--signal-down)' : 'var(--signal-neutral)' }}>
-                            Score: {article.score.toFixed(2)}
-                          </span>
+                    {sentiment.sentiment.article_count === 0 ? (
+                      <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontStyle: 'italic' }}>No recent news articles found for this stock.</p>
+                    ) : (
+                      sentiment.sentiment.top_headlines?.slice(0, 3).map((article, idx) => (
+                        <div key={idx} style={{ padding: '0.75rem', background: 'var(--bg-surface-elevated)', borderRadius: 'var(--border-radius-sm)', transition: 'background 0.2s', ':hover': { background: 'var(--glass-highlight)' } }}>
+                          <p style={{ fontSize: '0.85rem', margin: '0 0 0.4rem 0', fontWeight: '500' }}>{article.headline}</p>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                            <span>{article.provider}</span>
+                            <span style={{ color: article.score > 0 ? 'var(--signal-up)' : article.score < 0 ? 'var(--signal-down)' : 'var(--signal-neutral)' }}>
+                              Score: {article.score.toFixed(2)}
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))
+                    )}
                   </div>
                 </div>
               ) : (

@@ -90,4 +90,9 @@ export const getTargetProfitSuggestions = async (target = 5000, maxCapital = nul
   return response.data;
 };
 
+export const getFullAnalysis = async () => {
+  const response = await api.get('/portfolio/full-analysis');
+  return response.data;
+};
+
 export default api;

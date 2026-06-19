@@ -255,6 +255,8 @@ class RecommendationEngine:
             return f"The engine strongly advises CUTTING LOSSES. The technical trend is completely broken and sentiment is weak. The probability of regaining your invested capital or reaching a previous peak is exceptionally low right now. Reallocate your capital to higher-probability setups."
         elif action == "BUY MORE":
             return f"The AI identifies extreme bullish momentum and strong sentiment. Since you already hold this position, it is recommended to BUY MORE (Accumulate) to maximize profits on this confirmed uptrend."
+        elif action == "AVERAGE DOWN":
+            return f"The position is underwater, but technicals show an extremely strong reversal/bullish signal. This is an optimal zone to AVERAGE DOWN and lower your cost basis."
         elif action == "BUY":
             return f"The engine recommends a STRICT BUY with {confidence}% conviction. Current market scenarios and sentiment indicate a high-probability upside move."
         elif action == "SELL":
@@ -315,6 +317,11 @@ class RecommendationEngine:
                 if unrealized_pct > 2.0 and score >= self.BUY_THRESHOLD:
                     reason = f"Position is in profit by {unrealized_pct:.1f}% with strong continuation signals."
                     return "BUY MORE", reason
+                    
+                # If underwater but score is extremely high => AVERAGE DOWN
+                if unrealized_pct < 0.0 and score >= self.BUY_THRESHOLD:
+                    reason = f"Position is underwater by {abs(unrealized_pct):.1f}% but technicals show strong reversal/bullish signals. Opportunity to average down."
+                    return "AVERAGE DOWN", reason
 
         if score >= self.BUY_THRESHOLD:
             return "BUY", None

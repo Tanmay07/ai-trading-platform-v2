@@ -1,20 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { Link } from 'react-router-dom';
 import GlassCard from '../components/GlassCard';
-import { getMarketSummary, addPortfolioHolding, updatePortfolioHolding, deletePortfolioHolding, getStrategy } from '../services/api';
-import { TrendingUp, TrendingDown, DollarSign, Plus, Edit2, Trash2, X, Zap, Loader, AlertCircle } from 'lucide-react';
+import { getMarketSummary, addPortfolioHolding, updatePortfolioHolding, deletePortfolioHolding, getFullAnalysis } from '../services/api';
+import { TrendingUp, TrendingDown, DollarSign, Plus, Edit2, Trash2, X, Zap, Loader, AlertCircle, ChevronDown, ChevronUp, BarChart2, Activity } from 'lucide-react';
 
 export default function Dashboard() {
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   
   const [modalState, setModalState] = useState({ isOpen: false, mode: 'add', data: null });
-  const [detailsModal, setDetailsModal] = useState({ isOpen: false, data: null });
   const [formData, setFormData] = useState({ symbol: '', quantity: '', buy_price: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [strategyState, setStrategyState] = useState({ loading: false, done: false, predictions: null, error: null });
-
-  // Conclusion is now generated strictly by the backend and passed in prediction.conclusion
+  
+  // Full analysis state
+  const [analysisState, setAnalysisState] = useState({ loading: false, done: false, data: null, error: null });
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
 
   const loadData = () => {
     setLoading(true);
@@ -25,7 +26,6 @@ export default function Dashboard() {
       })
       .catch(err => {
         console.error('Failed to load summary', err);
-        alert('API Error: ' + err.message + (err.response ? ' - ' + JSON.stringify(err.response.data) : ''));
         setLoading(false);
       });
   };
@@ -85,19 +85,53 @@ export default function Dashboard() {
     }
   };
 
-  const handleStrategy = async () => {
-    if (!summary || !summary.holdings || summary.holdings.length === 0) return;
-    const symbols = summary.holdings.map(h => h.symbol);
-    setStrategyState({ loading: true, done: false, predictions: null, error: null });
-    
+  const handleFullAnalysis = async () => {
+    setAnalysisState({ loading: true, done: false, data: null, error: null });
     try {
-      const res = await getStrategy(symbols);
-      const predMap = {};
-      res.predictions.forEach(p => predMap[p.symbol] = p);
-      setStrategyState({ loading: false, done: true, predictions: predMap, error: null });
+      const res = await getFullAnalysis();
+      setAnalysisState({ loading: false, done: true, data: res, error: null });
     } catch (err) {
-      setStrategyState({ loading: false, done: false, predictions: null, error: err.message || "Strategy generation failed" });
+      setAnalysisState({ loading: false, done: false, data: null, error: err.message || "Full analysis failed" });
     }
+  };
+
+  const handleSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const getSortedAnalysis = () => {
+    if (!analysisState.data?.analysis) return [];
+    const rows = [...analysisState.data.analysis];
+    if (!sortConfig.key) return rows;
+    
+    rows.sort((a, b) => {
+      let aVal = a[sortConfig.key];
+      let bVal = b[sortConfig.key];
+      if (typeof aVal === 'string') aVal = aVal.toLowerCase();
+      if (typeof bVal === 'string') bVal = bVal.toLowerCase();
+      if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+    return rows;
+  };
+
+  const getVerdictStyle = (verdict) => {
+    if (!verdict) return {};
+    if (verdict.includes('BUY MORE')) return { background: 'rgba(63, 185, 80, 0.2)', color: 'var(--signal-up)', fontWeight: 'bold' };
+    if (verdict.includes('AVERAGE DOWN')) return { background: 'rgba(88, 166, 255, 0.2)', color: 'var(--accent-primary)', fontWeight: 'bold' };
+    if (verdict.includes('BUY')) return { background: 'rgba(63, 185, 80, 0.1)', color: 'var(--signal-up)' };
+    if (verdict.includes('SELL') || verdict === 'CUT LOSSES') return { background: 'rgba(248, 81, 73, 0.2)', color: 'var(--signal-down)' };
+    return { background: 'rgba(139, 148, 158, 0.2)', color: 'var(--text-secondary)' };
+  };
+
+  const SortIcon = ({ column }) => {
+    if (sortConfig.key !== column) return null;
+    return sortConfig.direction === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />;
   };
 
   if (loading && !summary) return <div className="animate-fade-in" style={{ padding: '2rem' }}>Loading Dashboard...</div>;
@@ -113,24 +147,26 @@ export default function Dashboard() {
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
           <button 
             className="btn btn-primary" 
-            onClick={handleStrategy} 
-            disabled={strategyState.loading || !summary.holdings || summary.holdings.length === 0}
+            onClick={handleFullAnalysis} 
+            disabled={analysisState.loading}
             style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
           >
-            {strategyState.loading ? <><Loader size={16} className="animate-spin" /> Analyzing...</> : <><Zap size={16} /> Buy/Hold/Sell Analysis Engine</>}
+            {analysisState.loading ? <><Loader size={16} className="animate-spin" /> Analyzing All Holdings...</> : <><Zap size={16} /> Run Full Portfolio Analysis</>}
           </button>
           <button className="btn" onClick={() => handleOpenModal('add')} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <Plus size={16} /> Add Holding
           </button>
         </div>
       </header>
-      {strategyState.error && (
+
+      {analysisState.error && (
         <div style={{ color: 'var(--signal-down)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <AlertCircle size={16} /> {strategyState.error}
+          <AlertCircle size={16} /> {analysisState.error}
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
+      {/* Summary Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem' }}>
         <GlassCard>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <div style={{ padding: '1rem', background: 'var(--bg-surface-elevated)', borderRadius: '50%' }}>
@@ -156,78 +192,175 @@ export default function Dashboard() {
             </div>
           </div>
         </GlassCard>
+
+        {analysisState.done && analysisState.data?.totals && (
+          <>
+            <GlassCard>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div style={{ padding: '1rem', background: 'var(--bg-surface-elevated)', borderRadius: '50%' }}>
+                  <DollarSign size={24} color="#8b949e" />
+                </div>
+                <div>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: 0 }}>Total Invested</p>
+                  <h2 style={{ margin: 0, fontSize: '1.8rem' }}>₹{analysisState.data.totals.total_invested?.toFixed(2)}</h2>
+                </div>
+              </div>
+            </GlassCard>
+            <GlassCard>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div style={{ padding: '1rem', background: 'var(--bg-surface-elevated)', borderRadius: '50%' }}>
+                  <TrendingUp size={24} color="var(--accent-primary)" />
+                </div>
+                <div>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: 0 }}>Holdings</p>
+                  <h2 style={{ margin: 0, fontSize: '1.8rem' }}>{analysisState.data.holdings_count}</h2>
+                </div>
+              </div>
+            </GlassCard>
+          </>
+        )}
       </div>
 
-      <GlassCard title="Active Holdings">
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid var(--glass-border)', color: 'var(--text-secondary)' }}>
-                <th style={{ padding: '1rem 0.5rem' }}>Symbol</th>
-                <th style={{ padding: '1rem 0.5rem' }}>Qty</th>
-                <th style={{ padding: '1rem 0.5rem' }}>Avg Price</th>
-                <th style={{ padding: '1rem 0.5rem' }}>Current Price</th>
-                <th style={{ padding: '1rem 0.5rem' }}>P&L (%)</th>
-                {strategyState.done && (
-                  <>
-                    <th style={{ padding: '1rem 0.5rem' }}>Signal</th>
-                    <th style={{ padding: '1rem 0.5rem' }}>Target</th>
-                    <th style={{ padding: '1rem 0.5rem' }}>Stop Loss</th>
-                  </>
-                )}
-                <th style={{ padding: '1rem 0.5rem', textAlign: 'right' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {summary.holdings && summary.holdings.map((holding) => {
-                const pred = strategyState.predictions ? strategyState.predictions[holding.symbol] : null;
-                return (
-                <tr key={holding.symbol} style={{ borderBottom: '1px solid var(--glass-border)' }}>
-                  <td style={{ padding: '1rem 0.5rem', fontWeight: '500' }}>{holding.symbol}</td>
-                  <td style={{ padding: '1rem 0.5rem' }}>{holding.quantity}</td>
-                  <td style={{ padding: '1rem 0.5rem' }}>₹{holding.avg_buy_price?.toFixed(2)}</td>
-                  <td style={{ padding: '1rem 0.5rem' }}>₹{holding.current_price?.toFixed(2) || 'N/A'}</td>
-                  <td style={{ padding: '1rem 0.5rem', color: holding.unrealized_pnl >= 0 ? 'var(--signal-up)' : 'var(--signal-down)' }}>
-                    {holding.unrealized_pnl >= 0 ? '+' : ''}{holding.unrealized_pnl_pct?.toFixed(2)}%
-                  </td>
-                  {strategyState.done && (
-                    <>
-                      <td style={{ padding: '1rem 0.5rem' }}>
-                        {pred ? (
-                          <span 
-                            onClick={() => setDetailsModal({ isOpen: true, data: pred })}
-                            style={{ 
-                              padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold',
-                              background: pred.action.includes('BUY') ? 'rgba(63, 185, 80, 0.2)' : pred.action.includes('SELL') || pred.action === 'CUT LOSSES' ? 'rgba(248, 81, 73, 0.2)' : 'rgba(139, 148, 158, 0.2)',
-                              color: pred.action.includes('BUY') ? 'var(--signal-up)' : pred.action.includes('SELL') || pred.action === 'CUT LOSSES' ? 'var(--signal-down)' : 'var(--text-secondary)',
-                              cursor: 'pointer',
-                              display: 'inline-flex', alignItems: 'center', gap: '0.2rem'
-                            }}
-                            title="Click to view AI reasoning"
-                          >
-                            {pred.action} ({Math.round(pred.confidence_score)}%)
-                          </span>
-                        ) : '-'}
-                      </td>
-                      <td style={{ padding: '1rem 0.5rem', color: 'var(--signal-up)' }}>{pred ? `₹${(pred.action === 'HOLD' ? pred.hold_target : pred.suggested_target)?.toFixed(2)}` : '-'}</td>
-                      <td style={{ padding: '1rem 0.5rem', color: 'var(--signal-down)' }}>{pred ? `₹${pred.suggested_stop_loss?.toFixed(2)}` : '-'}</td>
-                    </>
-                  )}
-                  <td style={{ padding: '1rem 0.5rem', textAlign: 'right' }}>
-                    <button onClick={() => handleOpenModal('edit', holding)} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', marginRight: '0.5rem' }} title="Edit">
-                      <Edit2 size={16} />
-                    </button>
-                    <button onClick={() => handleDelete(holding.symbol)} style={{ background: 'transparent', border: 'none', color: 'var(--signal-down)', cursor: 'pointer' }} title="Delete">
-                      <Trash2 size={16} />
-                    </button>
-                  </td>
+      {/* Full Analysis Table */}
+      {analysisState.done && analysisState.data?.analysis ? (
+        <GlassCard title="Full Portfolio Analysis — AI Verdicts">
+          <div style={{ overflowX: 'auto', marginTop: '0.5rem' }}>
+            <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+              <thead>
+                <tr style={{ borderBottom: '2px solid var(--glass-border)', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+                  {[
+                    { key: 'symbol', label: 'Symbol' },
+                    { key: 'sector', label: 'Sector' },
+                    { key: 'quantity', label: 'Qty' },
+                    { key: 'avg_price', label: 'Avg Price (₹)' },
+                    { key: 'ltp', label: 'LTP (₹)' },
+                    { key: 'invested_value', label: 'Invested (₹)' },
+                    { key: 'current_value', label: 'Current (₹)' },
+                    { key: 'weight_pct', label: 'Weight %' },
+                    { key: 'pnl_pct', label: 'P&L %' },
+                    { key: 'verdict', label: 'Verdict' },
+                  ].map(col => (
+                    <th 
+                      key={col.key}
+                      onClick={() => handleSort(col.key)}
+                      style={{ padding: '0.75rem 0.5rem', cursor: 'pointer', userSelect: 'none' }}
+                    >
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                        {col.label} <SortIcon column={col.key} />
+                      </span>
+                    </th>
+                  ))}
+                  <th style={{ padding: '0.75rem 0.5rem', minWidth: '300px' }}>Rationale</th>
+                  <th style={{ padding: '0.75rem 0.5rem', textAlign: 'right' }}>Actions</th>
                 </tr>
-              )})}
-            </tbody>
-          </table>
-        </div>
-      </GlassCard>
+              </thead>
+              <tbody>
+                {getSortedAnalysis().map((row) => (
+                  <tr key={row.symbol} style={{ borderBottom: '1px solid var(--glass-border)' }}>
+                    <td style={{ padding: '0.6rem 0.5rem', fontWeight: '600', whiteSpace: 'nowrap' }}>{row.symbol}</td>
+                    <td style={{ padding: '0.6rem 0.5rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{row.sector}</td>
+                    <td style={{ padding: '0.6rem 0.5rem' }}>{row.quantity?.toLocaleString()}</td>
+                    <td style={{ padding: '0.6rem 0.5rem' }}>{row.avg_price?.toFixed(2)}</td>
+                    <td style={{ padding: '0.6rem 0.5rem' }}>{row.ltp?.toFixed(2)}</td>
+                    <td style={{ padding: '0.6rem 0.5rem' }}>{row.invested_value?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                    <td style={{ padding: '0.6rem 0.5rem' }}>{row.current_value?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                    <td style={{ padding: '0.6rem 0.5rem' }}>{row.weight_pct?.toFixed(2)}%</td>
+                    <td style={{ 
+                      padding: '0.6rem 0.5rem', 
+                      fontWeight: '600',
+                      color: row.pnl_pct >= 0 ? 'var(--signal-up)' : 'var(--signal-down)' 
+                    }}>
+                      {row.pnl_pct >= 0 ? '+' : ''}{row.pnl_pct?.toFixed(2)}%
+                    </td>
+                    <td style={{ padding: '0.6rem 0.5rem' }}>
+                      <span style={{
+                        padding: '0.2rem 0.5rem',
+                        borderRadius: '4px',
+                        fontSize: '0.75rem',
+                        fontWeight: 'bold',
+                        whiteSpace: 'nowrap',
+                        ...getVerdictStyle(row.verdict)
+                      }}>
+                        {row.verdict}
+                      </span>
+                    </td>
+                    <td style={{ 
+                      padding: '0.6rem 0.5rem', 
+                      color: 'var(--text-secondary)', 
+                      fontSize: '0.8rem',
+                      lineHeight: '1.4',
+                      maxWidth: '400px'
+                    }}>
+                      {row.rationale}
+                    </td>
+                    <td style={{ padding: '0.6rem 0.5rem', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                      <Link to={`/market/${row.symbol}`} style={{ color: 'var(--accent-primary)', marginRight: '0.5rem' }} title="Market View">
+                        <BarChart2 size={16} />
+                      </Link>
+                      <Link to={`/analysis/${row.symbol}`} style={{ color: 'var(--text-primary)', marginRight: '0.75rem' }} title="Full Analysis">
+                        <Activity size={16} />
+                      </Link>
+                      <button onClick={() => handleOpenModal('edit', { symbol: row.symbol, quantity: row.quantity, avg_buy_price: row.avg_price })} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', marginRight: '0.5rem' }} title="Edit">
+                        <Edit2 size={16} />
+                      </button>
+                      <button onClick={() => handleDelete(row.symbol)} style={{ background: 'transparent', border: 'none', color: 'var(--signal-down)', cursor: 'pointer' }} title="Delete">
+                        <Trash2 size={16} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </GlassCard>
+      ) : (
+        /* Default Holdings Table (before analysis is run) */
+        <GlassCard title="Active Holdings">
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--glass-border)', color: 'var(--text-secondary)' }}>
+                  <th style={{ padding: '1rem 0.5rem' }}>Symbol</th>
+                  <th style={{ padding: '1rem 0.5rem' }}>Qty</th>
+                  <th style={{ padding: '1rem 0.5rem' }}>Avg Price</th>
+                  <th style={{ padding: '1rem 0.5rem' }}>Current Price</th>
+                  <th style={{ padding: '1rem 0.5rem' }}>P&L (%)</th>
+                  <th style={{ padding: '1rem 0.5rem', textAlign: 'right' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {summary.holdings && summary.holdings.map((holding) => (
+                  <tr key={holding.symbol} style={{ borderBottom: '1px solid var(--glass-border)' }}>
+                    <td style={{ padding: '1rem 0.5rem', fontWeight: '500' }}>{holding.symbol}</td>
+                    <td style={{ padding: '1rem 0.5rem' }}>{holding.quantity}</td>
+                    <td style={{ padding: '1rem 0.5rem' }}>₹{holding.avg_buy_price?.toFixed(2)}</td>
+                    <td style={{ padding: '1rem 0.5rem' }}>₹{holding.current_price?.toFixed(2) || 'N/A'}</td>
+                    <td style={{ padding: '1rem 0.5rem', color: holding.unrealized_pnl >= 0 ? 'var(--signal-up)' : 'var(--signal-down)' }}>
+                      {holding.unrealized_pnl >= 0 ? '+' : ''}{holding.unrealized_pnl_pct?.toFixed(2)}%
+                    </td>
+                    <td style={{ padding: '1rem 0.5rem', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                      <Link to={`/market/${holding.symbol}`} style={{ color: 'var(--accent-primary)', marginRight: '0.5rem' }} title="Market View">
+                        <BarChart2 size={16} />
+                      </Link>
+                      <Link to={`/analysis/${holding.symbol}`} style={{ color: 'var(--text-primary)', marginRight: '0.75rem' }} title="Full Analysis">
+                        <Activity size={16} />
+                      </Link>
+                      <button onClick={() => handleOpenModal('edit', holding)} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', marginRight: '0.5rem' }} title="Edit">
+                        <Edit2 size={16} />
+                      </button>
+                      <button onClick={() => handleDelete(holding.symbol)} style={{ background: 'transparent', border: 'none', color: 'var(--signal-down)', cursor: 'pointer' }} title="Delete">
+                        <Trash2 size={16} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </GlassCard>
+      )}
 
+      {/* Add/Edit Holding Modal */}
       {modalState.isOpen && createPortal(
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
@@ -279,79 +412,6 @@ export default function Dashboard() {
                   {isSubmitting ? 'Saving...' : 'Save Holding'}
                 </button>
               </form>
-            </GlassCard>
-          </div>
-        </div>,
-        document.body
-      )}
-
-      {detailsModal.isOpen && detailsModal.data && createPortal(
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0, 0, 0, 0.7)', backdropFilter: 'blur(4px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '1rem'
-        }}>
-          <div style={{ width: '100%', maxWidth: '600px', position: 'relative', maxHeight: '90vh', overflowY: 'auto' }}>
-            <GlassCard title={`AI Reasoning: ${detailsModal.data.symbol}`}>
-              <button onClick={() => setDetailsModal({ isOpen: false, data: null })} style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}>
-                <X size={20} />
-              </button>
-              <div style={{ marginTop: '1rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
-                  <span style={{
-                    padding: '0.4rem 0.8rem', borderRadius: '4px', fontSize: '1rem', fontWeight: 'bold',
-                    background: detailsModal.data.action.includes('BUY') ? 'rgba(63, 185, 80, 0.2)' : detailsModal.data.action.includes('SELL') || detailsModal.data.action === 'CUT LOSSES' ? 'rgba(248, 81, 73, 0.2)' : 'rgba(139, 148, 158, 0.2)',
-                    color: detailsModal.data.action.includes('BUY') ? 'var(--signal-up)' : detailsModal.data.action.includes('SELL') || detailsModal.data.action === 'CUT LOSSES' ? 'var(--signal-down)' : 'var(--text-secondary)'
-                  }}>
-                    {detailsModal.data.action} ({Math.round(detailsModal.data.confidence_score)}% Conviction)
-                  </span>
-                  <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                    Risk Level: <strong style={{ color: '#fff' }}>{detailsModal.data.risk_score}</strong>
-                  </span>
-                </div>
-
-                <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)' }}>Why? (Key Reasons)</h4>
-                <ul style={{ paddingLeft: '1.2rem', marginBottom: '1.5rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
-                  {detailsModal.data.reasons && detailsModal.data.reasons.length > 0 ? (
-                    detailsModal.data.reasons.map((reason, i) => <li key={i}>{reason}</li>)
-                  ) : (
-                    <li>No specific reasons provided by the engine.</li>
-                  )}
-                </ul>
-
-                <div style={{ background: 'var(--bg-surface-elevated)', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem', borderLeft: `4px solid ${detailsModal.data.action.includes('BUY') ? 'var(--signal-up)' : detailsModal.data.action.includes('SELL') || detailsModal.data.action === 'CUT LOSSES' ? 'var(--signal-down)' : '#8b949e'}` }}>
-                  <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)' }}>AI Conclusion</h4>
-                  <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: '1.5', fontSize: '0.95rem' }}>
-                    {detailsModal.data.conclusion || 'No conclusion provided.'}
-                  </p>
-                </div>
-
-                <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)' }}>Sentiment</h4>
-                <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
-                  {detailsModal.data.sentiment_summary || 'N/A (No news data)'}
-                </p>
-
-                <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)' }}>Technical Metrics Snapshot</h4>
-                {detailsModal.data.supporting_indicators ? (
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                    <div><strong>RSI (14):</strong> {detailsModal.data.supporting_indicators.rsi?.toFixed(2)}</div>
-                    <div><strong>MACD Hist:</strong> {detailsModal.data.supporting_indicators.macd_histogram?.toFixed(2)}</div>
-                    <div><strong>SMA 20:</strong> ₹{detailsModal.data.supporting_indicators.sma_20?.toFixed(2)}</div>
-                    <div><strong>SMA 50:</strong> ₹{detailsModal.data.supporting_indicators.sma_50?.toFixed(2)}</div>
-                    <div><strong>SMA 200:</strong> ₹{detailsModal.data.supporting_indicators.sma_200?.toFixed(2)}</div>
-                    <div><strong>Vol Ratio:</strong> {detailsModal.data.supporting_indicators.volume_ratio?.toFixed(2)}x</div>
-                    <div><strong>Target:</strong> ₹{detailsModal.data.suggested_target?.toFixed(2)}</div>
-                    <div><strong>Stop Loss:</strong> ₹{detailsModal.data.suggested_stop_loss?.toFixed(2)}</div>
-                    {detailsModal.data.hold_target && (
-                      <div style={{ gridColumn: '1 / -1', marginTop: '0.5rem', color: 'var(--accent-primary)' }}>
-                        <strong>Hold Until Target:</strong> ₹{detailsModal.data.hold_target?.toFixed(2)}
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <p style={{ color: 'var(--text-secondary)' }}>No technical metrics available.</p>
-                )}
-              </div>
             </GlassCard>
           </div>
         </div>,
