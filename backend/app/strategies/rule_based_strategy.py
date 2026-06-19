@@ -35,13 +35,13 @@ class RuleBasedStrategy:
         - ML:         15%  (gradient-boosted model predictions)
     """
 
-    # Weights for combining signal dimensions
-    TREND_WEIGHT: float = 0.27
-    MOMENTUM_WEIGHT: float = 0.23
+    # Weights for combining signal dimensions (Strict Profit Max)
+    TREND_WEIGHT: float = 0.20       # Reduced slightly
+    MOMENTUM_WEIGHT: float = 0.30    # Heavily increased for quick profits
     VOLUME_WEIGHT: float = 0.15
-    VOLATILITY_WEIGHT: float = 0.11
-    SENTIMENT_WEIGHT: float = 0.09
-    ML_WEIGHT: float = 0.15
+    VOLATILITY_WEIGHT: float = 0.10
+    SENTIMENT_WEIGHT: float = 0.15   # Increased to capture market scenario
+    ML_WEIGHT: float = 0.10
 
     def __init__(self) -> None:
         self.logger = get_logger(__name__)

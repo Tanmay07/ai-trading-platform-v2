@@ -14,32 +14,7 @@ export default function Dashboard() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [strategyState, setStrategyState] = useState({ loading: false, done: false, predictions: null, error: null });
 
-  const generateConclusion = (pred) => {
-    if (!pred) return "";
-    const action = pred.action;
-    const score = pred.confidence_score;
-    
-    if (action === 'HOLD') {
-      if (score < 30) {
-        return "The AI is highly uncertain due to heavily conflicting signals. For example, positive price trends might be entirely offset by bearish constraints like dead volume or extreme volatility. The engine recommends holding your current position to avoid getting chopped out, but advises against allocating fresh capital until true conviction returns.";
-      } else {
-        return "The AI recommends a HOLD. The current market conditions for this stock are consolidating or range-bound, lacking a strong directional catalyst to justify a new entry or exit.";
-      }
-    } else if (action === 'BUY') {
-      if (score >= 50) {
-        return "The AI has strong conviction in a BUY signal. There is excellent alignment across price momentum, volume support, and technical indicators suggesting an upward continuation.";
-      } else {
-        return "The AI suggests a cautious BUY. While the technicals lean positive, the conviction is moderate, indicating potential upside but with some lingering risks or missing confirmations.";
-      }
-    } else if (action === 'SELL') {
-      if (score >= 50) {
-        return "The AI strongly recommends a SELL. Multiple technical dimensions indicate severe deterioration. Exiting or reducing the position is advised to protect against further downside risk.";
-      } else {
-        return "The AI leans towards a SELL. The technical structure is weakening, though the immediate downside momentum is moderate. Consider tightening stop-losses.";
-      }
-    }
-    return "The engine has analyzed the technicals and sentiment to generate this recommendation.";
-  };
+  // Conclusion is now generated strictly by the backend and passed in prediction.conclusion
 
   const loadData = () => {
     setLoading(true);
@@ -50,6 +25,7 @@ export default function Dashboard() {
       })
       .catch(err => {
         console.error('Failed to load summary', err);
+        alert('API Error: ' + err.message + (err.response ? ' - ' + JSON.stringify(err.response.data) : ''));
         setLoading(false);
       });
   };
@@ -138,7 +114,7 @@ export default function Dashboard() {
           <button 
             className="btn btn-primary" 
             onClick={handleStrategy} 
-            disabled={strategyState.loading || summary.holdings.length === 0}
+            disabled={strategyState.loading || !summary.holdings || summary.holdings.length === 0}
             style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
           >
             {strategyState.loading ? <><Loader size={16} className="animate-spin" /> Analyzing...</> : <><Zap size={16} /> Buy/Hold/Sell Analysis Engine</>}
@@ -203,7 +179,7 @@ export default function Dashboard() {
               </tr>
             </thead>
             <tbody>
-              {summary.holdings.map((holding) => {
+              {summary.holdings && summary.holdings.map((holding) => {
                 const pred = strategyState.predictions ? strategyState.predictions[holding.symbol] : null;
                 return (
                 <tr key={holding.symbol} style={{ borderBottom: '1px solid var(--glass-border)' }}>
@@ -222,8 +198,8 @@ export default function Dashboard() {
                             onClick={() => setDetailsModal({ isOpen: true, data: pred })}
                             style={{ 
                               padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold',
-                              background: pred.action === 'BUY' ? 'rgba(63, 185, 80, 0.2)' : pred.action === 'SELL' ? 'rgba(248, 81, 73, 0.2)' : 'rgba(139, 148, 158, 0.2)',
-                              color: pred.action === 'BUY' ? 'var(--signal-up)' : pred.action === 'SELL' ? 'var(--signal-down)' : 'var(--text-secondary)',
+                              background: pred.action.includes('BUY') ? 'rgba(63, 185, 80, 0.2)' : pred.action.includes('SELL') || pred.action === 'CUT LOSSES' ? 'rgba(248, 81, 73, 0.2)' : 'rgba(139, 148, 158, 0.2)',
+                              color: pred.action.includes('BUY') ? 'var(--signal-up)' : pred.action.includes('SELL') || pred.action === 'CUT LOSSES' ? 'var(--signal-down)' : 'var(--text-secondary)',
                               cursor: 'pointer',
                               display: 'inline-flex', alignItems: 'center', gap: '0.2rem'
                             }}
@@ -233,8 +209,8 @@ export default function Dashboard() {
                           </span>
                         ) : '-'}
                       </td>
-                      <td style={{ padding: '1rem 0.5rem', color: 'var(--signal-up)' }}>{pred ? `₹${pred.target_price?.toFixed(2)}` : '-'}</td>
-                      <td style={{ padding: '1rem 0.5rem', color: 'var(--signal-down)' }}>{pred ? `₹${pred.stop_loss?.toFixed(2)}` : '-'}</td>
+                      <td style={{ padding: '1rem 0.5rem', color: 'var(--signal-up)' }}>{pred ? `₹${(pred.action === 'HOLD' ? pred.hold_target : pred.suggested_target)?.toFixed(2)}` : '-'}</td>
+                      <td style={{ padding: '1rem 0.5rem', color: 'var(--signal-down)' }}>{pred ? `₹${pred.suggested_stop_loss?.toFixed(2)}` : '-'}</td>
                     </>
                   )}
                   <td style={{ padding: '1rem 0.5rem', textAlign: 'right' }}>
@@ -324,8 +300,8 @@ export default function Dashboard() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
                   <span style={{
                     padding: '0.4rem 0.8rem', borderRadius: '4px', fontSize: '1rem', fontWeight: 'bold',
-                    background: detailsModal.data.action === 'BUY' ? 'rgba(63, 185, 80, 0.2)' : detailsModal.data.action === 'SELL' ? 'rgba(248, 81, 73, 0.2)' : 'rgba(139, 148, 158, 0.2)',
-                    color: detailsModal.data.action === 'BUY' ? 'var(--signal-up)' : detailsModal.data.action === 'SELL' ? 'var(--signal-down)' : 'var(--text-secondary)'
+                    background: detailsModal.data.action.includes('BUY') ? 'rgba(63, 185, 80, 0.2)' : detailsModal.data.action.includes('SELL') || detailsModal.data.action === 'CUT LOSSES' ? 'rgba(248, 81, 73, 0.2)' : 'rgba(139, 148, 158, 0.2)',
+                    color: detailsModal.data.action.includes('BUY') ? 'var(--signal-up)' : detailsModal.data.action.includes('SELL') || detailsModal.data.action === 'CUT LOSSES' ? 'var(--signal-down)' : 'var(--text-secondary)'
                   }}>
                     {detailsModal.data.action} ({Math.round(detailsModal.data.confidence_score)}% Conviction)
                   </span>
@@ -343,10 +319,10 @@ export default function Dashboard() {
                   )}
                 </ul>
 
-                <div style={{ background: 'var(--bg-surface-elevated)', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem', borderLeft: `4px solid ${detailsModal.data.action === 'BUY' ? 'var(--signal-up)' : detailsModal.data.action === 'SELL' ? 'var(--signal-down)' : '#8b949e'}` }}>
+                <div style={{ background: 'var(--bg-surface-elevated)', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem', borderLeft: `4px solid ${detailsModal.data.action.includes('BUY') ? 'var(--signal-up)' : detailsModal.data.action.includes('SELL') || detailsModal.data.action === 'CUT LOSSES' ? 'var(--signal-down)' : '#8b949e'}` }}>
                   <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)' }}>AI Conclusion</h4>
                   <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: '1.5', fontSize: '0.95rem' }}>
-                    {generateConclusion(detailsModal.data)}
+                    {detailsModal.data.conclusion || 'No conclusion provided.'}
                   </p>
                 </div>
 
@@ -366,6 +342,11 @@ export default function Dashboard() {
                     <div><strong>Vol Ratio:</strong> {detailsModal.data.supporting_indicators.volume_ratio?.toFixed(2)}x</div>
                     <div><strong>Target:</strong> ₹{detailsModal.data.suggested_target?.toFixed(2)}</div>
                     <div><strong>Stop Loss:</strong> ₹{detailsModal.data.suggested_stop_loss?.toFixed(2)}</div>
+                    {detailsModal.data.hold_target && (
+                      <div style={{ gridColumn: '1 / -1', marginTop: '0.5rem', color: 'var(--accent-primary)' }}>
+                        <strong>Hold Until Target:</strong> ₹{detailsModal.data.hold_target?.toFixed(2)}
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <p style={{ color: 'var(--text-secondary)' }}>No technical metrics available.</p>

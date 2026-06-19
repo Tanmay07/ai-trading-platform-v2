@@ -40,9 +40,9 @@ class RecommendationEngine:
     not financial advice.
     """
 
-    # Thresholds for mapping combined score → action
-    BUY_THRESHOLD: float = settings.BUY_THRESHOLD   # default 0.3
-    SELL_THRESHOLD: float = settings.SELL_THRESHOLD  # default -0.3
+    # Thresholds for mapping combined score → action (STRICTER)
+    BUY_THRESHOLD: float = 0.35   # Was 0.45 (relaxed slightly so technicals alone can trigger it)
+    SELL_THRESHOLD: float = -0.15  # Cut losses early
 
     def __init__(self) -> None:
         self.strategy = RuleBasedStrategy()
@@ -63,23 +63,9 @@ class RecommendationEngine:
         current_price: float | None = None,
         holding: dict | None = None,
     ) -> dict:
-        """Generate a complete recommendation for *symbol*.
-
-        Args:
-            symbol: NSE stock symbol (with or without ``.NS`` suffix).
-            current_price: Optional override; if ``None`` the engine fetches
-                the latest price via :class:`MarketDataService`.
-            holding: Optional portfolio context — ``{quantity, avg_buy_price}``.
-
-        Returns:
-            A dictionary with the following keys:
-                symbol, action, confidence_score, risk_score, reasons,
-                supporting_indicators, sentiment_summary, model_probability,
-                suggested_stop_loss, suggested_target, time_horizon,
-                current_price, disclaimer, timestamp.
-        """
+        """Generate a complete recommendation for *symbol*."""
         symbol = validate_symbol(symbol)
-        self.logger.info("Generating recommendation for %s", symbol)
+        self.logger.info("Generating strict recommendation for %s", symbol)
 
         try:
             # 1. Fetch historical data
@@ -140,14 +126,14 @@ class RecommendationEngine:
             atr = self._safe_float(last_row, "atr", default=current_price * 0.02)
             volatility = self._safe_float(last_row, "volatility_20d", default=0.02)
 
-            # 6. Map score → action
+            # 6. Map score → strict action
             combined = signals["combined_score"]
-            action = self._score_to_action(combined, holding)
+            action, action_reason = self._score_to_strict_action(combined, current_price, holding)
             confidence = self._score_to_confidence(combined)
             risk_label = self._map_risk_score(volatility, combined)
 
             # 7. Collect reasons (including sentiment & ML)
-            all_reasons: list[str] = []
+            all_reasons: list[str] = [action_reason] if action_reason else []
             for dim in ("trend", "momentum", "volume", "volatility", "sentiment", "ml"):
                 all_reasons.extend(signals["signal_details"][dim]["reasons"])
 
@@ -165,13 +151,22 @@ class RecommendationEngine:
             # 9. Stop-loss & target
             stop_loss = self._calculate_stop_loss(current_price, atr, action)
             target = self._calculate_target(current_price, atr, action)
+            
+            hold_target = None
+            if "HOLD" in action:
+                # If holding, suggest a target based on resistance
+                hold_target = round(price_data.get("dayHigh", current_price + 1.5 * atr) if hasattr(self, 'price_data') else current_price + 1.5 * atr, 2)
 
             # 10. Sentiment summary
             sentiment_summary = self._build_sentiment_summary(sentiment_data)
+            
+            # 11. Generate backend conclusion
+            conclusion = self._generate_backend_conclusion(action, confidence, hold_target, action_reason)
 
             return {
                 "symbol": symbol,
                 "action": action,
+                "conclusion": conclusion,
                 "confidence_score": round(confidence, 2),
                 "risk_score": risk_label,
                 "reasons": all_reasons,
@@ -180,6 +175,7 @@ class RecommendationEngine:
                 "model_probability": ml_probability,
                 "suggested_stop_loss": round(stop_loss, 2),
                 "suggested_target": round(target, 2),
+                "hold_target": hold_target,
                 "time_horizon": "1–2 weeks (swing trade)",
                 "current_price": round(current_price, 2),
                 "disclaimer": DISCLAIMER,
@@ -191,15 +187,7 @@ class RecommendationEngine:
             return self._empty_recommendation(symbol, current_price)
 
     def get_portfolio_recommendations(self, holdings: list[dict]) -> list[dict]:
-        """Generate recommendations for every portfolio holding.
-
-        Args:
-            holdings: List of dicts, each with at least ``symbol``, ``quantity``,
-                and ``avg_buy_price``.
-
-        Returns:
-            List of recommendation dicts (same shape as :meth:`get_recommendation`).
-        """
+        """Generate recommendations for every portfolio holding."""
         recommendations: list[dict] = []
         for h in holdings:
             symbol = h.get("symbol", "")
@@ -220,14 +208,7 @@ class RecommendationEngine:
         return recommendations
 
     def get_watchlist_recommendations(self, symbols: list[str]) -> list[dict]:
-        """Generate recommendations for an arbitrary list of symbols.
-        
-        Args:
-            symbols: List of NSE stock symbols.
-            
-        Returns:
-            List of recommendation dicts.
-        """
+        """Generate recommendations for an arbitrary list of symbols."""
         recommendations: list[dict] = []
         for symbol in symbols:
             try:
@@ -243,18 +224,7 @@ class RecommendationEngine:
         symbols: list[str] | None = None,
         top_n: int = 5,
     ) -> list[dict]:
-        """Screen stocks and return the top *top_n* with the highest upside score.
-
-        In Phase 1 this is driven purely by rule-based scoring.
-        Phase 3 will integrate ML predictions.
-
-        Args:
-            symbols: Symbols to screen.  Defaults to ``settings.DEFAULT_WATCHLIST``.
-            top_n: Number of top results to return.
-
-        Returns:
-            Sorted list of recommendation dicts (best upside first).
-        """
+        """Screen stocks and return the top *top_n* with the highest upside score."""
         if symbols is None:
             symbols = list(settings.DEFAULT_WATCHLIST)
 
@@ -269,7 +239,7 @@ class RecommendationEngine:
         # Sort by combined confidence + bullish bias
         scored.sort(
             key=lambda r: r.get("confidence_score", 0)
-            * (1 if r.get("action") == "BUY" else -0.5 if r.get("action") == "SELL" else 0.1),
+            * (1 if "BUY" in r.get("action", "") else -0.5 if "SELL" in r.get("action", "") else 0.1),
             reverse=True,
         )
 
@@ -279,39 +249,41 @@ class RecommendationEngine:
     # Private helpers
     # ------------------------------------------------------------------
 
-    def _calculate_stop_loss(self, price: float, atr: float, action: str) -> float:
-        """Calculate suggested stop-loss based on ATR.
-
-        For BUY  → ``price - 2 × ATR``  (protect against downside)
-        For SELL → ``price + 2 × ATR``  (protect against upside squeeze)
-        """
-        if action == "BUY":
-            return max(price - 2.0 * atr, 0.0)
+    def _generate_backend_conclusion(self, action: str, confidence: float, hold_target: float | None, reason: str | None) -> str:
+        """Generate a dynamic conclusion string."""
+        if action == "CUT LOSSES":
+            return f"The engine strongly advises CUTTING LOSSES. The technical trend is completely broken and sentiment is weak. The probability of regaining your invested capital or reaching a previous peak is exceptionally low right now. Reallocate your capital to higher-probability setups."
+        elif action == "BUY MORE":
+            return f"The AI identifies extreme bullish momentum and strong sentiment. Since you already hold this position, it is recommended to BUY MORE (Accumulate) to maximize profits on this confirmed uptrend."
+        elif action == "BUY":
+            return f"The engine recommends a STRICT BUY with {confidence}% conviction. Current market scenarios and sentiment indicate a high-probability upside move."
         elif action == "SELL":
+            return f"The engine recommends a SELL. Momentum and sentiment are decaying, posing a risk of further capital erosion."
+        else: # HOLD
+            target_str = f" Hold until the price reaches ₹{hold_target} before re-evaluating." if hold_target else ""
+            if confidence < 30:
+                return f"The AI recommends HOLDING due to highly conflicting signals or neutral momentum. Avoid deploying fresh capital here.{target_str}"
+            else:
+                return f"The AI recommends a HOLD. The stock is range-bound or currently forming a base.{target_str}"
+
+    def _calculate_stop_loss(self, price: float, atr: float, action: str) -> float:
+        """Calculate suggested stop-loss based on ATR."""
+        if "BUY" in action:
+            return max(price - 2.0 * atr, 0.0)
+        elif "SELL" in action or action == "CUT LOSSES":
             return price + 2.0 * atr
-        # HOLD — use a wider stop (2.5×ATR below)
         return max(price - 2.5 * atr, 0.0)
 
     def _calculate_target(self, price: float, atr: float, action: str) -> float:
-        """Calculate suggested target based on ATR.
-
-        Aims for roughly 1.5 : 1 risk-reward.
-        For BUY  → ``price + 3 × ATR``
-        For SELL → ``price - 3 × ATR``
-        """
-        if action == "BUY":
+        """Calculate suggested target based on ATR."""
+        if "BUY" in action:
             return price + 3.0 * atr
-        elif action == "SELL":
+        elif "SELL" in action or action == "CUT LOSSES":
             return max(price - 3.0 * atr, 0.0)
-        # HOLD — modest upside target
         return price + 2.0 * atr
 
     def _map_risk_score(self, volatility: float, combined_score: float) -> str:
-        """Map numerical volatility and signal strength to a risk label.
-
-        Higher volatility and weaker signal conviction → higher risk.
-        """
-        # Annualise if daily
+        """Map numerical volatility and signal strength to a risk label."""
         if 0 < volatility < 1:
             annual_vol = volatility * np.sqrt(252)
         else:
@@ -319,25 +291,36 @@ class RecommendationEngine:
 
         abs_score = abs(combined_score)
 
-        # Strong conviction + low vol → Low risk
         if annual_vol < 0.25 and abs_score > 0.4:
             return "Low"
-        # High vol or very weak signal → High risk
         if annual_vol > 0.45 or abs_score < 0.1:
             return "High"
         return "Medium"
 
-    def _score_to_action(self, score: float, holding: dict | None = None) -> str:
-        """Convert combined score to BUY / SELL / HOLD.
+    def _score_to_strict_action(self, score: float, current_price: float, holding: dict | None = None) -> tuple[str, str | None]:
+        """Convert combined score to strict portfolio-aware action."""
+        
+        # If user holds the stock, evaluate peak distance and loss
+        if holding and holding.get("quantity", 0) > 0:
+            avg_buy = holding.get("avg_buy_price", 0.0)
+            if avg_buy > 0:
+                unrealized_pct = ((current_price - avg_buy) / avg_buy) * 100
+                
+                # If deeply underwater and score is negative (bearish) => CUT LOSSES
+                if unrealized_pct < -5.0 and score < 0.0:
+                    reason = f"Position is underwater by {unrealized_pct:.1f}% and technicals are deeply bearish. Very low chance of regaining peak."
+                    return "CUT LOSSES", reason
+                
+                # If heavily in profit and score is extremely high => BUY MORE
+                if unrealized_pct > 2.0 and score >= self.BUY_THRESHOLD:
+                    reason = f"Position is in profit by {unrealized_pct:.1f}% with strong continuation signals."
+                    return "BUY MORE", reason
 
-        If the user already holds the stock, a marginally positive score
-        defaults to HOLD rather than BUY to avoid over-concentration.
-        """
         if score >= self.BUY_THRESHOLD:
-            return "BUY"
+            return "BUY", None
         if score <= self.SELL_THRESHOLD:
-            return "SELL"
-        return "HOLD"
+            return "SELL", None
+        return "HOLD", None
 
     @staticmethod
     def _score_to_confidence(score: float) -> float:

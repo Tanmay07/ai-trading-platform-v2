@@ -37,69 +37,133 @@ import math
 @router.get("/target-profit")
 async def get_target_profit_suggestions(target: float = 5000.0, max_capital: float = None):
     """
-    Fetch 2-3 stock suggestions that will yield the `target` profit.
-    Calculates the exact quantity to buy based on ML predicted exit prices.
+    Fetch 3 bundle suggestions that will collectively yield the `target` profit.
+    Finds pairs of high-quality stocks and evenly distributes the profit target among them.
     Filters for solid fundamentals and positive ML forecasts.
     """
     try:
         data = s3_service.download_json(SUGGESTIONS_KEY) or {}
         
-        candidates = []
+        # 1. Filter for top-quality individual candidates
+        valid_stocks = []
         for symbol, info in data.items():
             trade_setup = info.get("trade_setup", {})
-            entry_price = trade_setup.get("sugg_entry")
+            current_price = info.get("current_price")
+            
+            # Use current price as entry price. Fallback to sugg_entry if current_price is missing.
+            entry_price = current_price if current_price else trade_setup.get("sugg_entry")
             exit_price = trade_setup.get("exit_price")
+            
+            if current_price:
+                trade_setup["sugg_entry"] = current_price
             
             if not entry_price or not exit_price:
                 continue
                 
-            # Filter 1: Must have a positive predicted movement
             profit_per_share = exit_price - entry_price
             if profit_per_share <= 0:
                 continue
                 
-            # Filter 2: Fundamentals check
-            # We prefer stocks with positive ROE and EPS
             fundamentals = info.get("fundamentals", {})
             roe = fundamentals.get("roe")
             eps = fundamentals.get("eps")
             
-            # Basic sanity check (if data is "N/A" we might skip or penalize)
             if roe not in ("N/A", None) and eps not in ("N/A", None):
                 try:
                     if float(roe) <= 0 or float(eps) <= 0:
                         continue
                 except (ValueError, TypeError):
                     pass
-
-            # Calculate Quantity and Capital
-            # We want: (exit_price - entry_price) * quantity >= target
-            quantity = math.ceil(target / profit_per_share)
-            capital_required = quantity * entry_price
             
-            # Filter 3: Capital Constraint
-            if max_capital and capital_required > max_capital:
+            # Store necessary info for bundle generation
+            info["_profit_per_share"] = profit_per_share
+            info["_entry_price"] = entry_price
+            info["_rr_ratio"] = float(trade_setup.get("rr_ratio", 0))
+            
+            # Extract ML metrics for growth potential
+            ml = info.get("ml_analysis", {})
+            info["_forecast_value"] = float(ml.get("forecast_value", 0))
+            
+            # Confidence is like "78.2%", strip the % and convert to float
+            conf_str = ml.get("model_confidence", "0").replace("%", "")
+            try:
+                info["_confidence"] = float(conf_str)
+            except ValueError:
+                info["_confidence"] = 0.0
+
+            valid_stocks.append(info)
+            
+        # Sort by Forecast Value (Growth) and Model Confidence to maximize short-term gains
+        valid_stocks.sort(key=lambda x: (x["_forecast_value"], x["_confidence"]), reverse=True)
+        # Take the top 20 candidates to form bundles from
+        top_candidates = valid_stocks[:20]
+        
+        # 2. Generate bundles of 2 stocks
+        bundles = []
+        import itertools
+        import uuid
+        
+        target_min = target * 0.9
+        target_max = target * 1.1
+        
+        for stock_a, stock_b in itertools.combinations(top_candidates, 2):
+            # Split target equally
+            target_per_stock = target / 2.0
+            
+            qty_a = math.ceil(target_per_stock / stock_a["_profit_per_share"])
+            qty_b = math.ceil(target_per_stock / stock_b["_profit_per_share"])
+            
+            capital_a = qty_a * stock_a["_entry_price"]
+            capital_b = qty_b * stock_b["_entry_price"]
+            total_capital = capital_a + capital_b
+            
+            if max_capital and total_capital > max_capital:
                 continue
                 
-            # Add to candidates
-            info["target_plan"] = {
-                "target_profit": target,
-                "quantity": quantity,
-                "capital_required": round(capital_required, 2),
-                "profit_per_share": round(profit_per_share, 2),
-                "expected_total_profit": round(quantity * profit_per_share, 2)
-            }
-            candidates.append(info)
+            profit_a = qty_a * stock_a["_profit_per_share"]
+            profit_b = qty_b * stock_b["_profit_per_share"]
+            total_profit = profit_a + profit_b
             
-        # Sort candidates. Best candidates are those that require the least capital for the same profit
-        # Or those with the highest R:R ratio. Let's sort by R:R ratio descending, then capital required ascending.
-        candidates.sort(key=lambda x: (
-            float(x.get("trade_setup", {}).get("rr_ratio", 0)),
-            -x["target_plan"]["capital_required"]
-        ), reverse=True)
+            if target_min <= total_profit <= target_max:
+                # Build the bundle object
+                # Deep copy to avoid mutating the shared candidate dictionary
+                import copy
+                s_a = copy.deepcopy(stock_a)
+                s_b = copy.deepcopy(stock_b)
+                
+                # Remove temporary calculation keys
+                for key in ["_profit_per_share", "_entry_price", "_rr_ratio"]:
+                    s_a.pop(key, None)
+                    s_b.pop(key, None)
+                
+                s_a["target_plan"] = {
+                    "quantity": qty_a,
+                    "capital_required": round(capital_a, 2),
+                    "profit_per_share": round(profit_a / qty_a, 2) if qty_a else 0,
+                    "expected_total_profit": round(profit_a, 2)
+                }
+                
+                s_b["target_plan"] = {
+                    "quantity": qty_b,
+                    "capital_required": round(capital_b, 2),
+                    "profit_per_share": round(profit_b / qty_b, 2) if qty_b else 0,
+                    "expected_total_profit": round(profit_b, 2)
+                }
+                
+                bundles.append({
+                    "bundle_id": str(uuid.uuid4()),
+                    "total_capital_required": round(total_capital, 2),
+                    "expected_total_profit": round(total_profit, 2),
+                    "combined_growth_forecast": round((stock_a["_forecast_value"] + stock_b["_forecast_value"]) / 2, 2),
+                    "combined_confidence": round((stock_a["_confidence"] + stock_b["_confidence"]) / 2, 2),
+                    "stocks": [s_a, s_b]
+                })
+
+        # Sort bundles: prioritize highest growth forecast, then confidence, then lowest capital required
+        bundles.sort(key=lambda b: (b["combined_growth_forecast"], b["combined_confidence"], -b["total_capital_required"]), reverse=True)
         
-        # Return top 3
-        return {"status": "success", "data": candidates[:3]}
+        # Return top 3 bundles
+        return {"status": "success", "data": bundles[:3]}
         
     except Exception as e:
         logger.error(f"Failed to calculate target profit suggestions: {e}")

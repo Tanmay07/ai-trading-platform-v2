@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getTargetProfitSuggestions } from '../services/api';
-import { Target, TrendingUp, ShieldAlert, Zap, BookOpen } from 'lucide-react';
+import { Target, TrendingUp, ShieldAlert, Zap, BookOpen, Layers } from 'lucide-react';
 
 const TargetProfitSuggestions = () => {
   const [target, setTarget] = useState(5000);
@@ -78,55 +78,75 @@ const TargetProfitSuggestions = () => {
       ) : suggestions.length === 0 ? (
         <div style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '5rem 0' }}>No trades found matching your capital constraints or there are no positive forecasts today.</div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
-          {suggestions.map((s, idx) => (
-            <div key={s.symbol} style={{ background: 'var(--surface-color)', borderRadius: '12px', border: '1px solid var(--surface-border)', overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative' }}>
-              {idx === 0 && <div style={{ position: 'absolute', top: 0, right: 0, background: 'var(--primary)', color: '#000', fontSize: '0.75rem', fontWeight: 'bold', padding: '0.25rem 0.75rem', borderBottomLeftRadius: '8px' }}>TOP PICK</div>}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2rem' }}>
+          {suggestions.map((bundle, idx) => (
+            <div key={bundle.bundle_id} style={{ background: 'var(--surface-color)', borderRadius: '12px', border: '1px solid var(--surface-border)', overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+              {idx === 0 && <div style={{ position: 'absolute', top: 0, right: 0, background: 'var(--primary)', color: '#000', fontSize: '0.75rem', fontWeight: 'bold', padding: '0.25rem 0.75rem', borderBottomLeftRadius: '8px' }}>TOP PORTFOLIO</div>}
               
-              <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--surface-border)', background: 'rgba(255,255,255,0.02)' }}>
-                <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', margin: 0 }}>{s.symbol.replace('.NS', '')}</h2>
-                <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.company_name}</p>
+              {/* Bundle Header */}
+              <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--surface-border)', background: 'rgba(255,255,255,0.02)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', margin: 0, display: 'flex', alignItems: 'center' }}>
+                    <Layers size={24} style={{ marginRight: '0.75rem', color: 'var(--primary)' }} />
+                    Portfolio Option {idx + 1}
+                  </h2>
+                  <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', margin: '0.25rem 0 0 0' }}>
+                    <span style={{ color: '#60a5fa', fontWeight: '600' }}>+{bundle.combined_growth_forecast}% Expected Growth</span> • {bundle.combined_confidence}% AI Confidence
+                  </p>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Expected Profit</div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#34d399' }}>₹{bundle.expected_total_profit.toLocaleString('en-IN')}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>Capital Required: ₹{bundle.total_capital_required.toLocaleString('en-IN')}</div>
+                </div>
               </div>
 
-              <div style={{ padding: '1.5rem', flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                {/* The Plan */}
-                <div style={{ background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.3)', padding: '1rem', borderRadius: '8px' }}>
-                  <h3 style={{ fontWeight: '600', color: '#93c5fd', display: 'flex', alignItems: 'center', marginBottom: '0.75rem', fontSize: '1rem', marginTop: 0 }}>
-                    <Zap size={16} style={{ marginRight: '0.5rem' }} /> The Action Plan
-                  </h3>
-                  <div style={{ fontSize: '1.125rem' }}>
-                    Buy <span style={{ fontWeight: 'bold', color: '#fff' }}>{s.target_plan.quantity}</span> shares at <span style={{ fontWeight: 'bold', color: '#fff' }}>₹{s.trade_setup.sugg_entry}</span>
-                  </div>
-                  <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
-                    Requires <span style={{ color: '#fff', fontWeight: '500' }}>₹{s.target_plan.capital_required.toLocaleString('en-IN')}</span> capital
-                  </div>
-                </div>
+              {/* Stocks Grid */}
+              <div style={{ padding: '1.5rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '1.5rem' }}>
+                {bundle.stocks.map((s) => (
+                  <div key={s.symbol} style={{ background: 'rgba(0,0,0,0.2)', borderRadius: '8px', border: '1px solid var(--surface-border)', padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--surface-border)', paddingBottom: '0.75rem' }}>
+                      <div>
+                        <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', margin: 0 }}>{s.symbol.replace('.NS', '')}</h3>
+                        <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '200px' }}>{s.company_name}</p>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Buy Quantity</div>
+                        <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#60a5fa' }}>{s.target_plan.quantity} Shares</div>
+                      </div>
+                    </div>
 
-                <div style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '1rem', borderRadius: '8px' }}>
-                  <h3 style={{ fontWeight: '600', color: '#34d399', display: 'flex', alignItems: 'center', marginBottom: '0.75rem', fontSize: '1rem', marginTop: 0 }}>
-                    <TrendingUp size={16} style={{ marginRight: '0.5rem' }} /> The Exit Strategy
-                  </h3>
-                  <div style={{ fontSize: '1.125rem' }}>
-                    Sell at <span style={{ fontWeight: 'bold', color: '#6ee7b7' }}>₹{s.trade_setup.exit_price}</span> to make <span style={{ fontWeight: 'bold', color: '#6ee7b7' }}>₹{s.target_plan.expected_total_profit.toLocaleString('en-IN')}</span> profit
-                  </div>
-                </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', fontSize: '0.875rem' }}>
+                      <div style={{ color: 'var(--text-secondary)' }}>Entry Price:</div>
+                      <div style={{ fontWeight: 'bold', textAlign: 'right' }}>₹{s.trade_setup.sugg_entry}</div>
+                      
+                      <div style={{ color: 'var(--text-secondary)' }}>Target Exit:</div>
+                      <div style={{ fontWeight: 'bold', textAlign: 'right', color: '#34d399' }}>₹{s.trade_setup.exit_price}</div>
+                      
+                      <div style={{ color: 'var(--text-secondary)' }}>Stop Loss:</div>
+                      <div style={{ fontWeight: 'bold', textAlign: 'right', color: '#f87171' }}>₹{s.trade_setup.stop_loss}</div>
 
-                <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '0.75rem', borderRadius: '8px', display: 'flex', alignItems: 'center' }}>
-                  <ShieldAlert size={16} style={{ color: '#f87171', marginRight: '0.5rem' }} />
-                  <span style={{ color: '#fca5a5', fontSize: '0.875rem' }}>Stop Loss: <strong>₹{s.trade_setup.stop_loss}</strong> (Risking ~₹{((s.trade_setup.sugg_entry - s.trade_setup.stop_loss) * s.target_plan.quantity).toLocaleString('en-IN')})</span>
-                </div>
+                      <div style={{ color: 'var(--text-secondary)' }}>Capital Needed:</div>
+                      <div style={{ fontWeight: 'bold', textAlign: 'right' }}>₹{s.target_plan.capital_required.toLocaleString('en-IN')}</div>
+                      
+                      <div style={{ color: 'var(--text-secondary)' }}>Expected Profit:</div>
+                      <div style={{ fontWeight: 'bold', textAlign: 'right', color: '#34d399' }}>₹{s.target_plan.expected_total_profit.toLocaleString('en-IN')}</div>
+                    </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: 'auto', paddingTop: '1rem', borderTop: '1px solid var(--surface-border)' }}>
-                  <div>
-                    <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.25rem', display: 'flex', alignItems: 'center' }}><BookOpen size={12} style={{ marginRight: '0.25rem' }}/> Fundamentals</div>
-                    <div style={{ fontSize: '0.875rem' }}>ROE: <span style={{ color: '#4ade80' }}>{s.fundamentals.roe}%</span></div>
-                    <div style={{ fontSize: '0.875rem' }}>EPS: <span style={{ color: '#fff' }}>{s.fundamentals.eps}</span></div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: 'auto', paddingTop: '1rem', borderTop: '1px solid var(--surface-border)' }}>
+                      <div>
+                        <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.25rem', display: 'flex', alignItems: 'center' }}><BookOpen size={12} style={{ marginRight: '0.25rem' }}/> Fundamentals</div>
+                        <div style={{ fontSize: '0.75rem' }}>ROE: <span style={{ color: '#4ade80' }}>{s.fundamentals.roe}%</span></div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.25rem', display: 'flex', alignItems: 'center' }}><Zap size={12} style={{ marginRight: '0.25rem' }}/> ML Forecast</div>
+                        <div style={{ fontSize: '0.75rem', color: '#34d399', fontWeight: '600' }}>{s.ml_analysis['3_day_forecast']} expected</div>
+                      </div>
+                    </div>
+
                   </div>
-                  <div>
-                    <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.25rem', display: 'flex', alignItems: 'center' }}><Zap size={12} style={{ marginRight: '0.25rem' }}/> ML Forecast</div>
-                    <div style={{ fontSize: '0.875rem', color: '#34d399', fontWeight: '600' }}>{s.ml_analysis['3_day_forecast']} expected</div>
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
           ))}
