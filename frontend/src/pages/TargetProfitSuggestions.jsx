@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { getTargetProfitSuggestions } from '../services/api';
-import { Target, TrendingUp, ShieldAlert, Zap, BookOpen, Layers } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { getTargetProfitSuggestions, createPaperPortfolio } from '../services/api';
+import { Target, TrendingUp, ShieldAlert, Zap, BookOpen, Layers, Play } from 'lucide-react';
 
 const TargetProfitSuggestions = () => {
   const [target, setTarget] = useState(5000);
@@ -8,6 +9,8 @@ const TargetProfitSuggestions = () => {
   const [suggestions, setSuggestions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isPaperTesting, setIsPaperTesting] = useState(false);
+  const navigate = useNavigate();
 
   const fetchSuggestions = async () => {
     try {
@@ -29,6 +32,18 @@ const TargetProfitSuggestions = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     fetchSuggestions();
+  };
+
+  const handlePaperTest = async (bundle) => {
+    try {
+      setIsPaperTesting(true);
+      await createPaperPortfolio(bundle);
+      navigate('/paper-trading');
+    } catch (err) {
+      alert("Failed to start paper testing: " + err.message);
+    } finally {
+      setIsPaperTesting(false);
+    }
   };
 
   return (
@@ -63,7 +78,9 @@ const TargetProfitSuggestions = () => {
           </div>
           <button 
             type="submit" 
-            style={{ background: 'var(--primary)', color: '#000', fontWeight: 'bold', padding: '0.5rem 2rem', borderRadius: '4px', height: '46px', border: 'none', cursor: 'pointer' }}
+            style={{ background: '#3b82f6', color: '#ffffff', fontWeight: 'bold', padding: '0.5rem 2rem', borderRadius: '8px', height: '46px', border: 'none', cursor: 'pointer', transition: 'background 0.2s' }}
+            onMouseOver={(e) => e.target.style.background = '#2563eb'}
+            onMouseOut={(e) => e.target.style.background = '#3b82f6'}
           >
             Calculate Plans
           </button>
@@ -94,10 +111,32 @@ const TargetProfitSuggestions = () => {
                     <span style={{ color: '#60a5fa', fontWeight: '600' }}>+{bundle.combined_growth_forecast}% Expected Growth</span> • {bundle.combined_confidence}% AI Confidence
                   </p>
                 </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Expected Profit</div>
-                  <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#34d399' }}>₹{bundle.expected_total_profit.toLocaleString('en-IN')}</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>Capital Required: ₹{bundle.total_capital_required.toLocaleString('en-IN')}</div>
+                <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
+                  <div>
+                    <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Expected Profit</div>
+                    <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#34d399' }}>₹{bundle.expected_total_profit.toLocaleString('en-IN')}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>Capital Required: ₹{bundle.total_capital_required.toLocaleString('en-IN')}</div>
+                  </div>
+                  <button 
+                    onClick={() => handlePaperTest(bundle)}
+                    disabled={isPaperTesting}
+                    style={{ 
+                      background: 'rgba(52, 211, 153, 0.1)', 
+                      color: '#34d399', 
+                      border: '1px solid #34d399', 
+                      borderRadius: '4px', 
+                      padding: '0.5rem 1rem', 
+                      fontSize: '0.875rem', 
+                      fontWeight: 'bold', 
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem'
+                    }}
+                  >
+                    <Play size={16} />
+                    {isPaperTesting ? 'Starting...' : 'Paper Test Option'}
+                  </button>
                 </div>
               </div>
 

@@ -129,8 +129,8 @@ class MarketDataService:
             result.update(
                 {
                     "price": price,
-                    "change": round(change, 2),
-                    "change_pct": round(change_pct, 2),
+                    "change": change,
+                    "change_pct": change_pct,
                     "volume": volume,
                     "high": day_high,
                     "low": day_low,
@@ -138,12 +138,27 @@ class MarketDataService:
                     "prev_close": prev_close,
                 }
             )
-
-        except Exception as exc:
-            self.logger.error(
-                "Failed to fetch current price for %s: %s", symbol, exc, exc_info=True
-            )
-            result["error"] = str(exc)
+        except Exception as e:
+            self.logger.error("Failed to fetch current price for %s via yfinance: %s", symbol, e)
+            
+            # Google Finance Fallback when yfinance is rate limited
+            try:
+                import requests
+                import re
+                clean_symbol = symbol.replace('.NS', '').replace('.BO', '')
+                exchange = 'NSE' if '.NS' in symbol else ('BOM' if '.BO' in symbol else 'NSE')
+                url = f"https://www.google.com/finance/quote/{clean_symbol}:{exchange}"
+                res = requests.get(url, timeout=5)
+                match = re.search(r'class="YMlKec fxKbKc">₹?([0-9,.]+)<', res.text)
+                if match:
+                    fallback_price = float(match.group(1).replace(",", ""))
+                    result["price"] = fallback_price
+                    self.logger.info("Successfully fetched %s from Google Finance fallback", symbol)
+                    return result
+            except Exception as gf_e:
+                self.logger.error("Google finance fallback failed for %s: %s", symbol, gf_e)
+                
+            result["error"] = str(e)
 
         return result
 

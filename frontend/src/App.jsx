@@ -9,6 +9,7 @@ function Sidebar() {
     { path: '/', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
     { path: '/discovery', label: 'AI Discovery', icon: <Compass size={20} /> },
     { path: '/target-profit', label: 'Weekly Targets', icon: <Target size={20} /> },
+    { path: '/paper-trading', label: 'Paper Trading', icon: <Target size={20} /> },
     { path: '/screener', label: 'Sector Screener', icon: <Layers size={20} /> },
     { path: '/analysis/RELIANCE.NS', label: 'Full Analysis', icon: <Activity size={20} /> },
     { path: '/market/RELIANCE.NS', label: 'Market View', icon: <Activity size={20} /> },
@@ -76,6 +77,7 @@ import ScreenerView from './pages/ScreenerView';
 import DiscoveryView from './pages/DiscoveryView';
 import FullAnalysisDashboard from './pages/FullAnalysisDashboard';
 import TargetProfitSuggestions from './pages/TargetProfitSuggestions';
+import PaperTrading from './pages/PaperTrading';
 
 function App() {
   return (
@@ -91,6 +93,7 @@ function App() {
             <Route path="/market/:symbol" element={<MarketView />} />
             <Route path="/analysis/:symbol" element={<FullAnalysisDashboard />} />
             <Route path="/backtest" element={<BacktestView />} />
+            <Route path="/paper-trading" element={<PaperTrading />} />
           </Routes>
         </main>
       </div>

@@ -15,6 +15,7 @@ from fastapi.responses import RedirectResponse
 from app import __version__
 from app.config import settings
 from app.discovery.scheduler import scheduled_discovery_scan
+from app.suggestions.scheduler import scheduled_suggestion_scan
 from app.utils.helpers import DISCLAIMER, get_ist_now
 from app.utils.logger import get_logger
 
@@ -31,6 +32,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Start the discovery scheduler background task (once every 24 hours)
     # discovery_task = asyncio.create_task(scheduled_discovery_scan(interval_minutes=1440))
+    
+    # Start the suggestion job background task (once every 2 hours)
+    # suggestion_task = asyncio.create_task(scheduled_suggestion_scan(interval_minutes=120))
 
     logger.info("✅ Application started successfully")
 
@@ -39,11 +43,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # ── Shutdown ──────────────────────────────────────────────
     logger.info("🛑 Shutting down %s …", settings.APP_NAME)
     # discovery_task.cancel()
+    # suggestion_task.cancel()
     try:
         # await discovery_task
+        # await suggestion_task
         pass
     except asyncio.CancelledError:
-        logger.info("✅ Discovery scheduler stopped")
+        logger.info("✅ Discovery and Suggestion schedulers stopped")
 
 
 # ── FastAPI Application ──────────────────────────────────────
@@ -83,9 +89,11 @@ from app.api.ml_routes import router as ml_router                # noqa: E402
 from app.api.backtest_routes import router as backtest_router    # noqa: E402
 from app.api.ws_routes import router as ws_router                # noqa: E402
 from app.api.suggestion_routes import router as suggestion_router # noqa: E402
+from app.api.paper_trading_routes import router as paper_trading_router # noqa: E402
 app.include_router(market_router, prefix="/market", tags=["Market Data"])
 app.include_router(suggestion_router, prefix="/suggestions", tags=["Suggestions"])
 app.include_router(portfolio_router, prefix="/portfolio", tags=["Portfolio"])
+app.include_router(paper_trading_router, prefix="/paper-trading", tags=["Paper Trading"])
 app.include_router(prediction_router, prefix="/predictions", tags=["Predictions"])
 app.include_router(sentiment_router, prefix="/sentiment", tags=["Sentiment"])
 app.include_router(discovery_router, prefix="/discovery", tags=["Discovery"])

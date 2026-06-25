@@ -98,6 +98,31 @@ async def get_target_profit_suggestions(target: float = 5000.0, max_capital: flo
         # Take the top 20 candidates to form bundles from
         top_candidates = valid_stocks[:20]
         
+        # Fetch live data for the top candidates to ensure accuracy
+        from app.data.market_data_service import MarketDataService
+        md_service = MarketDataService()
+        for cand in top_candidates:
+            symbol = cand.get("symbol")
+            if not symbol:
+                continue
+            try:
+                live_info = md_service.get_current_price(symbol)
+                if live_info and "price" in live_info and live_info["price"] > 0:
+                    ltp = round(float(live_info["price"]), 2)
+                    cand["_entry_price"] = ltp
+                    if "trade_setup" in cand:
+                        cand["trade_setup"]["sugg_entry"] = ltp
+                        cand["current_price"] = ltp
+                        exit_price = cand["trade_setup"].get("exit_price")
+                        if exit_price:
+                            cand["_profit_per_share"] = round(float(exit_price) - ltp, 2)
+            except Exception as e:
+                logger.error(f"Failed to fetch live data for {symbol}: {e}")
+
+        # Remove candidates that no longer have positive profit potential with live prices
+        valid_live_candidates = [c for c in top_candidates if c.get("_profit_per_share", 0) > 0]
+        top_candidates = valid_live_candidates
+
         # 2. Generate bundles of 2 stocks
         bundles = []
         import itertools

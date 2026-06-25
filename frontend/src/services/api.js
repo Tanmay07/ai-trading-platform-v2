@@ -95,4 +95,19 @@ export const getFullAnalysis = async () => {
   return response.data;
 };
 
+export const createPaperPortfolio = async (bundle) => {
+  const response = await api.post('/paper-trading/create', bundle);
+  return response.data;
+};
+
+export const getPaperPortfolios = async () => {
+  const response = await api.get('/paper-trading');
+  return response.data;
+};
+
+export const deletePaperPortfolio = async (id) => {
+  const response = await api.delete(`/paper-trading/${id}`);
+  return response.data;
+};
+
 export default api;
