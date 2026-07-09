@@ -1,0 +1,10 @@
+evaluation_windows: [1, 3, 5, 7, 10]
+default_holding_period: 7
+
+archival:
+  enabled: true
+  days_until_archive: 30
+
+retraining:
+  confidence_drift_threshold: 0.10
+  accuracy_drift_threshold: 0.05
