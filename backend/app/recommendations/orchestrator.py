@@ -14,9 +14,13 @@ from app.recommendations.risk_engine import RiskEngine
 from app.recommendations.position_sizer import PositionSizer
 from app.recommendations.stop_loss import StopLossEngine
 from app.recommendations.target_engine import TargetEngine
-from app.recommendations.confidence_engine import ConfidenceEngine
 from app.services.technical_orchestrator import TechnicalOrchestrator
 from app.services.market_intelligence_orchestrator import MarketIntelligenceOrchestrator
+from app.ai.ai_orchestrator import AIOrchestrator
+from app.ml.ml_orchestrator import MLOrchestrator
+from app.reinforcement.rl_orchestrator import RLOrchestrator
+from app.portfolio.portfolio_orchestrator import PortfolioOrchestrator
+import asyncio
 
 logger = get_logger(__name__)
 
@@ -31,6 +35,10 @@ class RecommendationEngine:
         self.confidence_engine = ConfidenceEngine()
         self.tech_orchestrator = TechnicalOrchestrator()
         self.mi_orchestrator = MarketIntelligenceOrchestrator()
+        self.ai_orchestrator = AIOrchestrator()
+        self.ml_orchestrator = MLOrchestrator()
+        self.rl_orchestrator = RLOrchestrator()
+        self.portfolio_orchestrator = PortfolioOrchestrator()
         self.config = trading_config.recommendation
 
     def _process_candidate(
@@ -156,11 +164,45 @@ class RecommendationEngine:
             for rec in recommendations:
                 rec.update(market_info)
                 
-                prob_mult = market_info.get("breakout_probability_multiplier", 1.0)
-                exp_mult = market_info.get("exposure_multiplier", 1.0)
+            # --- PHASE 5: ML INFERENCE & FEATURE STORE ---
+            async def _run_ml():
+                tasks = [self.ml_orchestrator.process_candidate(rec) for rec in recommendations]
+                return await asyncio.gather(*tasks)
                 
-                rec["Confidence"] = min(100, rec.get("Confidence", 0) * prob_mult)
-                rec["breakout_score"] = min(100, rec.get("breakout_score", 0) * prob_mult)
+            ml_results = asyncio.run(_run_ml())
+            
+            for i, rec in enumerate(recommendations):
+                rec.update(ml_results[i])
+                
+            # --- PHASE 4: AI SUPERVISOR & CONSENSUS ---
+            async def _run_ai():
+                tasks = [self.ai_orchestrator.evaluate_candidate(rec) for rec in recommendations]
+                return await asyncio.gather(*tasks)
+                
+            ai_results = asyncio.run(_run_ai())
+            
+            for i, rec in enumerate(recommendations):
+                rec.update(ai_results[i])
+                
+                # Replace legacy Confidence with AI Confidence
+                rec["Confidence"] = rec.get("final_confidence", rec.get("Confidence", 0))
+                rec["Recommendation_Action"] = rec.get("final_recommendation", "HOLD")
+                
+            # --- PHASE 6: REINFORCEMENT LEARNING ---
+            async def _run_rl():
+                tasks = [self.rl_orchestrator.process_candidate(rec) for rec in recommendations]
+                return await asyncio.gather(*tasks)
+                
+            rl_results = asyncio.run(_run_rl())
+            
+            for i, rec in enumerate(recommendations):
+                rec.update(rl_results[i])
+                
+                # Replace with RL Calibrated Confidence
+                rec["Confidence"] = rec.get("Calibrated_Confidence", rec.get("Confidence", 0))
+                
+                prob_mult = market_info.get("breakout_probability_multiplier", 1.0)
+                exp_mult = market_info.get("exposure_multiplier", 1.0) * rec.get("RL_Exposure_Multiplier", 1.0)
                 
                 adj_risk_limits = {
                     "max_monetary_risk": risk_limits["max_monetary_risk"] * exp_mult,
@@ -180,11 +222,16 @@ class RecommendationEngine:
                 rec["Capital_Required"] = position_data["capital_required"]
                 rec["Portfolio_Allocation_Percent"] = position_data["portfolio_percent"]
                 
-            recommendations = [r for r in recommendations if r["Recommended_Quantity"] > 0]
+            # Filter out non-BUY recommendations or 0 quantity
+            recommendations = [r for r in recommendations if r["Recommendation_Action"] == "BUY" and r["Recommended_Quantity"] > 0]
+            
+            # --- PHASE 7: PORTFOLIO INTELLIGENCE ---
+            # Filter and size the final recommendations
+            recommendations = self.portfolio_orchestrator.filter_and_allocate(recommendations)
                     
-        # 5. Sort by Breakout Score -> Confidence -> Liquidity
+        # 5. Sort by Portfolio Fit Score -> AI Confidence -> Liquidity
         recommendations.sort(
-            key=lambda x: (x.get("breakout_score", 0), x.get("Confidence", 0), x.get("Liquidity_Score", 0)),
+            key=lambda x: (x.get("Portfolio_Fit_Score", 0), x.get("final_confidence", 0), x.get("Liquidity_Score", 0)),
             reverse=True
         )
         

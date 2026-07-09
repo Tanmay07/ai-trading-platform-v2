@@ -1,0 +1,27 @@
+costs:
+  brokerage_pct: 0.0003 # 0.03% (e.g. Zerodha)
+  stt_pct: 0.001 # 0.1% on delivery
+  exchange_txn_pct: 0.0000345 # 0.00345%
+  gst_pct: 0.18 # 18% on brokerage + txn charges
+  sebi_pct: 0.000001 # 0.0001%
+  stamp_duty_pct: 0.00015 # 0.015% on buy only
+
+slippage:
+  base_slippage_pct: 0.001 # 0.1%
+  volatility_multiplier: 1.5
+
+validation:
+  min_cagr: 0.15
+  max_drawdown: 0.20
+  min_win_rate: 0.45
+  min_monte_carlo_survival: 0.95
+
+monte_carlo:
+  iterations: 1000
+
+walk_forward:
+  train_window_days: 252 # 1 trading year
+  test_window_days: 63   # 1 trading quarter
+
+capacity:
+  max_adv_participation_pct: 0.05 # Max 5% of Average Daily Volume

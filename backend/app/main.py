@@ -86,6 +86,8 @@ from app.api.prediction_routes import router as prediction_router  # noqa: E402
 from app.api.sentiment_routes import router as sentiment_router  # noqa: E402
 from app.api.discovery_routes import router as discovery_router  # noqa: E402
 from app.api.ml_routes import router as ml_router                # noqa: E402
+from app.api.ml_models_routes import router as ml_models_router  # noqa: E402
+from app.api.reinforcement_routes import router as reinforcement_router # noqa: E402
 from app.api.backtest_routes import router as backtest_router    # noqa: E402
 from app.api.ws_routes import router as ws_router                # noqa: E402
 from app.api.suggestion_routes import router as suggestion_router # noqa: E402
@@ -97,9 +99,14 @@ app.include_router(portfolio_router, prefix="/portfolio", tags=["Portfolio"])
 app.include_router(paper_trading_router, prefix="/paper-trading", tags=["Paper Trading"])
 app.include_router(prediction_router, prefix="/predictions", tags=["Predictions"])
 app.include_router(sentiment_router, prefix="/sentiment", tags=["Sentiment"])
+from app.api.backtesting_v2_routes import router as backtesting_v2_router
+
 app.include_router(discovery_router, prefix="/discovery", tags=["Discovery"])
 app.include_router(ml_router, prefix="/ml", tags=["ML"])
+app.include_router(ml_models_router, tags=["ML Models"])
+app.include_router(reinforcement_router, tags=["Reinforcement Learning"])
 app.include_router(backtest_router, prefix="/backtest", tags=["Backtest"])
+app.include_router(backtesting_v2_router, tags=["Backtesting V2"])
 app.include_router(ws_router, prefix="/ws", tags=["WebSocket"])
 app.include_router(recommendation_router, tags=["Recommendations"])
 

@@ -1,0 +1,33 @@
+reward_weights:
+  profit: 1.0
+  sharpe: 0.5
+  drawdown_penalty: 2.0
+  holding_period_penalty: 0.1
+  calibration_bonus: 0.5
+
+learning_schedules:
+  frequency: "weekly"
+  min_experiences_required: 50
+
+policy_parameters:
+  learning_rate: 0.01
+  discount_factor: 0.95
+
+exploration:
+  epsilon_initial: 0.2
+  epsilon_decay: 0.99
+  epsilon_min: 0.05
+
+threshold_limits:
+  min_confidence_adjust: -0.15
+  max_confidence_adjust: 0.15
+  min_exposure_adjust: -0.20
+  max_exposure_adjust: 0.20
+
+replay_settings:
+  batch_size: 32
+  memory_size: 10000
+
+exposure_limits:
+  max_sector_exposure: 0.30
+  max_single_stock_exposure: 0.10

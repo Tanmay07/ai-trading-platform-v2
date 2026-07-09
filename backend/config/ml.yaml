@@ -1,0 +1,37 @@
+model_parameters:
+  xgboost:
+    max_depth: 6
+    learning_rate: 0.1
+    n_estimators: 100
+  lightgbm:
+    num_leaves: 31
+    learning_rate: 0.05
+    n_estimators: 100
+  random_forest:
+    n_estimators: 100
+    max_depth: 10
+  logistic_regression:
+    C: 1.0
+
+training_schedule:
+  frequency: "monthly"
+  auto_retrain_on_drift: true
+
+drift_thresholds:
+  psi_alert_level: 0.2
+  accuracy_drop_alert_level: 0.05
+
+ensemble_weights:
+  xgboost: 0.4
+  lightgbm: 0.4
+  random_forest: 0.2
+
+calibration_settings:
+  method: "isotonic"
+
+retraining_triggers:
+  max_model_age_days: 30
+  accuracy_threshold: 0.55
+
+feature_store_settings:
+  storage_path: "./data/feature_store.db"

@@ -1,0 +1,46 @@
+agent_weights:
+  TechnicalAgent: 0.15
+  BreakoutAgent: 0.15
+  MomentumAgent: 0.15
+  VolumeAgent: 0.10
+  MarketAgent: 0.10
+  MacroAgent: 0.05
+  SentimentAgent: 0.05
+  RiskAgent: 0.15
+  PortfolioAgent: 0.10
+
+regime_adjustments:
+  "Strong Bull":
+    TechnicalAgent: 0.30
+    MomentumAgent: 0.25
+    BreakoutAgent: 0.25
+    RiskAgent: 0.05
+    MarketAgent: 0.05
+    MacroAgent: 0.0
+    SentimentAgent: 0.05
+    VolumeAgent: 0.05
+    PortfolioAgent: 0.0
+  "Bear":
+    RiskAgent: 0.30
+    MarketAgent: 0.25
+    MacroAgent: 0.20
+    TechnicalAgent: 0.10
+    BreakoutAgent: 0.0
+    MomentumAgent: 0.0
+    VolumeAgent: 0.05
+    SentimentAgent: 0.05
+    PortfolioAgent: 0.05
+  "Sideways":
+    BreakoutAgent: 0.35
+    VolumeAgent: 0.25
+    MomentumAgent: 0.20
+    TechnicalAgent: 0.10
+    RiskAgent: 0.10
+    MarketAgent: 0.0
+    MacroAgent: 0.0
+    SentimentAgent: 0.0
+    PortfolioAgent: 0.0
+
+consensus_thresholds:
+  buy_confidence_min: 75
+  conflict_max: 30
