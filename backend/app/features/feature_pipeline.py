@@ -28,6 +28,8 @@ import pandas as pd
 from app.features.technical_features import TechnicalFeatures
 from app.features.volume_features import VolumeFeatures
 from app.features.volatility_features import VolatilityFeatures
+from app.features.macro_features import MacroFeatures
+from app.features.regime_features import RegimeFeatures
 from app.utils.logger import get_logger
 
 # Base OHLCV columns that are NOT features
@@ -115,6 +117,22 @@ class FeaturePipeline:
             )
         except Exception:
             self.logger.exception("Error in VolatilityFeatures pipeline.")
+            raise
+
+        # 4. Macro features (VIX, 10Y Yield, USD/INR)
+        try:
+            df = MacroFeatures.add_macro_features(df)
+            self.logger.debug("MacroFeatures complete — columns: %d", len(df.columns))
+        except Exception:
+            self.logger.exception("Error in MacroFeatures pipeline.")
+            raise
+            
+        # 5. Regime features (HMM)
+        try:
+            df = RegimeFeatures.add_regime_features(df)
+            self.logger.debug("RegimeFeatures complete — columns: %d", len(df.columns))
+        except Exception:
+            self.logger.exception("Error in RegimeFeatures pipeline.")
             raise
 
         feature_count = len(df.columns) - len(_OHLCV_COLUMNS)

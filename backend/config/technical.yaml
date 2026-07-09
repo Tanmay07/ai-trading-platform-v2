@@ -1,0 +1,17 @@
+breakout_score_weights:
+  multi_timeframe: 0.25
+  relative_strength: 0.20
+  breakout_patterns: 0.20
+  sector_rotation: 0.15
+  price_action: 0.10
+  vwap: 0.05
+  support_resistance: 0.05
+
+relative_strength:
+  periods: [20, 50]
+  market_benchmark: "^NSEI"
+
+pattern_thresholds:
+  vcp_max_contraction_percent: 5.0
+  darvas_box_duration: 10
+  tight_consolidation_atr_multiplier: 0.5

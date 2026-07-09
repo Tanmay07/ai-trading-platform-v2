@@ -88,11 +88,14 @@ class Settings(BaseSettings):
     USE_FINBERT: bool = False               # opt-in for FinBERT
     NEWS_SOURCES: list[str] = ["newsapi", "gnews", "rss"]
 
+    # ── Paper Trading ─────────────────────────────────────────
+    PAPER_TRADE_TIMEOUT_DAYS: int = 7
+
     # ── Phase 3: ML Prediction Models ────────────────────────────
     ML_MODEL_DIR: str = "ml_models"          # directory for persisted models
     ML_PREDICTION_WEIGHT: float = 0.15       # weight in combined score
-    ML_FORWARD_DAYS: int = 5                 # prediction horizon (trading days)
-    ML_UP_THRESHOLD: float = 0.01            # return > +1% → UP
+    ML_FORWARD_DAYS: int = 7                 # prediction horizon (trading days)
+    ML_UP_THRESHOLD: float = 0.02            # return > +2% → UP
     ML_DOWN_THRESHOLD: float = -0.01         # return < -1% → DOWN
     ML_TEST_SIZE: float = 0.2                # train/test split ratio
     ML_MIN_TRAINING_ROWS: int = 200          # minimum clean rows to train

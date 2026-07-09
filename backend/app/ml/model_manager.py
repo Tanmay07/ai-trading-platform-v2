@@ -121,7 +121,7 @@ class ModelManager:
         self,
         symbol: str,
         period: str = "2y",
-        n_iter: int = 10,
+        n_iter: int = 20,
     ) -> TrainingResult:
         """Train all model types and save the best one.
 
@@ -242,7 +242,7 @@ class ModelManager:
         self,
         symbols: list[str] | None = None,
         period: str = "2y",
-        n_iter: int = 10,
+        n_iter: int = 20,
     ) -> list[TrainingResult]:
         """Batch train models for multiple symbols.
 

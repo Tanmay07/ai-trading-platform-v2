@@ -90,6 +90,7 @@ from app.api.backtest_routes import router as backtest_router    # noqa: E402
 from app.api.ws_routes import router as ws_router                # noqa: E402
 from app.api.suggestion_routes import router as suggestion_router # noqa: E402
 from app.api.paper_trading_routes import router as paper_trading_router # noqa: E402
+from app.api.recommendation_routes import router as recommendation_router # noqa: E402
 app.include_router(market_router, prefix="/market", tags=["Market Data"])
 app.include_router(suggestion_router, prefix="/suggestions", tags=["Suggestions"])
 app.include_router(portfolio_router, prefix="/portfolio", tags=["Portfolio"])
@@ -100,6 +101,7 @@ app.include_router(discovery_router, prefix="/discovery", tags=["Discovery"])
 app.include_router(ml_router, prefix="/ml", tags=["ML"])
 app.include_router(backtest_router, prefix="/backtest", tags=["Backtest"])
 app.include_router(ws_router, prefix="/ws", tags=["WebSocket"])
+app.include_router(recommendation_router, tags=["Recommendations"])
 
 
 # ── Root Endpoints ────────────────────────────────────────────

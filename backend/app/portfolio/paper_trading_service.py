@@ -1,5 +1,8 @@
 import uuid
 from typing import List, Dict, Any
+from datetime import datetime, timezone
+
+from app.config import settings
 from app.data.s3_service import S3StorageService
 from app.data.market_data_service import MarketDataService
 from app.utils.helpers import get_ist_now
@@ -57,6 +60,10 @@ class PaperTradingService:
             total_invested = 0
             total_current_value = 0
             
+            created_at_str = portfolio.get("created_at")
+            created_at = datetime.fromisoformat(created_at_str) if created_at_str else get_ist_now()
+            days_elapsed = (get_ist_now() - created_at).days
+            
             for stock in portfolio["stocks"]:
                 symbol = stock["symbol"]
                 quantity = stock["quantity"]
@@ -83,6 +90,8 @@ class PaperTradingService:
                     stock["status"] = "Target Hit"
                 elif current_price <= stock["stop_loss"]:
                     stock["status"] = "Stop Loss Hit"
+                elif days_elapsed >= settings.PAPER_TRADE_TIMEOUT_DAYS:
+                    stock["status"] = "Failed"
                 else:
                     stock["status"] = "Active"
 

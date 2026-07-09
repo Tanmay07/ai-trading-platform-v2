@@ -38,6 +38,14 @@ class BhavcopyService:
                 
         raise Exception("Failed to fetch NSE Bhavcopy for the last 10 days.")
 
+    def get_bhavcopy_df(self) -> pd.DataFrame:
+        """Returns the raw Bhavcopy DataFrame."""
+        latest_date = self.get_latest_bhavcopy_date()
+        filename = f"cm{latest_date.strftime('%d%b%Y').upper()}bhav.csv"
+        file_path = self.download_dir / filename
+        logger.info(f"Using Bhavcopy from {latest_date}: {filename}")
+        return pd.read_csv(file_path)
+
     def get_top_liquid_stocks(self, limit: int = 150) -> List[str]:
         """
         Downloads the latest Bhavcopy and returns the top `limit` most actively

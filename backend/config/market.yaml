@@ -1,0 +1,23 @@
+market_score_weights:
+  market_regime: 0.25
+  market_breadth: 0.20
+  macro: 0.15
+  fii_dii: 0.15
+  volatility: 0.10
+  liquidity: 0.10
+  global_markets: 0.05
+
+exposure_rules:
+  "Strong Bull": 1.0
+  "Bull": 0.9
+  "Weak Bull": 0.8
+  "Accumulation": 0.7
+  "Sideways": 0.5
+  "Distribution": 0.4
+  "Weak Bear": 0.3
+  "Bear": 0.2
+  "Capitulation": 0.1
+  "High Volatility": 0.5
+  "Low Volatility": 1.0
+  "Risk-On": 1.0
+  "Risk-Off": 0.3
