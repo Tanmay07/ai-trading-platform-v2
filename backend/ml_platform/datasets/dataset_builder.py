@@ -68,7 +68,23 @@ class DatasetBuilder:
         # Automatically drop all target columns to prevent leakage
         label_cols = [col for col in df.columns if col.startswith('Target_')]
         
-        feature_cols = [col for col in df.columns if col not in label_cols and col not in drop_cols and col != 'Symbol']
+        # IMPORT ALPHA SELECTOR
+        from alpha_registry.optimization.alpha_selector import AlphaSelector
+        try:
+            selector = AlphaSelector()
+            approved_features = selector.get_production_features()
+            logger.info(f"AlphaSelector returned {len(approved_features)} approved factors.")
+        except Exception as e:
+            logger.warning(f"Failed to load AlphaSelector, falling back to all columns: {e}")
+            approved_features = [col for col in df.columns]
+            
+        feature_cols = [
+            col for col in df.columns 
+            if col not in label_cols 
+            and col not in drop_cols 
+            and col != 'Symbol'
+            and (col in approved_features or len(approved_features) == len(df.columns))
+        ]
         
         # Verify no leakage
         if not LeakageDetector.assert_no_leakage(df, feature_cols, label_cols):

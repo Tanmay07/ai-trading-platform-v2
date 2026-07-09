@@ -33,6 +33,7 @@ function Sidebar() {
     { path: '/platform/health', label: 'Platform Health', icon: <ActivitySquare size={20} /> },
     { path: '/platform/tradability', label: 'Tradability Engine', icon: <ShieldAlert size={20} /> },
     { path: '/platform/features', label: 'Feature Intelligence', icon: <Layers size={20} /> },
+    { path: '/platform/alpha', label: 'Alpha Research Lab', icon: <Microscope size={20} /> },
   ];
 
   const renderNavItems = (items) => (
@@ -140,6 +141,7 @@ import MarketIntelligenceHub from './pages/MarketIntelligenceHub';
 import PlatformHealth from './pages/PlatformHealth';
 import TradabilityIntelligence from './pages/TradabilityIntelligence';
 import FeatureIntelligence from './pages/FeatureIntelligence';
+import AlphaIntelligence from './pages/AlphaIntelligence';
 
 function App() {
   return (
@@ -173,6 +175,7 @@ function App() {
             <Route path="/platform/health" element={<PlatformHealth />} />
             <Route path="/platform/tradability" element={<TradabilityIntelligence />} />
             <Route path="/platform/features" element={<FeatureIntelligence />} />
+            <Route path="/platform/alpha" element={<AlphaIntelligence />} />
           </Routes>
         </main>
         <AIInsightsDrawer />

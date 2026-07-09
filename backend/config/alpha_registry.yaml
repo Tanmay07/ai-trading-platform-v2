@@ -1,0 +1,16 @@
+alpha_registry:
+  db_path: "alpha_registry.db"
+  
+  thresholds:
+    min_ic_production: 0.02
+    min_rank_ic_production: 0.025
+    decay_horizon_days: 10
+    max_correlation: 0.85 # Factors above this are considered redundant
+    min_coverage_pct: 0.80
+
+  statuses:
+    - "Production"
+    - "Experimental"
+    - "Testing"
+    - "Deprecated"
+    - "Archived"
