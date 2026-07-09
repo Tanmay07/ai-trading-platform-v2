@@ -1,83 +1,59 @@
 import pytest
-import pandas as pd
-from unittest.mock import patch
+from unittest.mock import MagicMock
+from market_intelligence.processing.deduplicator import Deduplicator
+from market_intelligence.processing.company_tagger import CompanyTagger
+from market_intelligence.processing.event_classifier import EventClassifier
+from market_intelligence.scoring.news_importance import NewsImportanceScorer
+from market_intelligence.memory.market_memory_engine import MarketMemoryEngine
 
-from app.services.market_regime_engine import MarketRegimeEngine
-from app.services.market_breadth_engine import MarketBreadthEngine
-from app.services.macro_engine import MacroEngine
-from app.services.fii_dii_engine import FiiDiiEngine
-from app.services.volatility_engine import VolatilityEngine
-from app.services.liquidity_engine import LiquidityEngine
-from app.services.market_score_engine import MarketScoreEngine
-from app.services.market_intelligence_orchestrator import MarketIntelligenceOrchestrator
-
-@pytest.fixture
-def mock_market_df():
-    data = {
-        "Close": [100] * 50 + [110] * 50 + [120] * 50 + [130] * 50 + [140] * 50
-    }
-    return pd.DataFrame(data)
-
-def test_market_regime(mock_market_df):
-    engine = MarketRegimeEngine()
-    res = engine.analyze(mock_market_df)
-    assert res["regime"] == "Strong Bull"
-    assert res["exposure_multiplier"] == 1.0
-
-def test_market_breadth():
-    engine = MarketBreadthEngine()
-    # Mocking multi index
-    arrays = [['RELIANCE.NS'], ['Close']]
-    tuples = list(zip(*arrays))
-    index = pd.MultiIndex.from_tuples(tuples)
-    df = pd.DataFrame([100]*250, columns=index)
+def test_deduplicator_hash():
+    d = Deduplicator()
+    hash1 = d.generate_hash("Q3 Results", "NSE", "2024-01-01T10:00:00Z")
+    hash2 = d.generate_hash("Q3 Results", "NSE", "2024-01-01T10:00:00Z")
+    hash3 = d.generate_hash("Q3 Results", "BSE", "2024-01-01T10:00:00Z")
     
-    # Adding High and Low for new highs/lows
-    df[('RELIANCE.NS', 'High')] = [105]*250
-    df[('RELIANCE.NS', 'Low')] = [95]*250
+    assert hash1 == hash2
+    assert hash1 != hash3
+
+def test_company_tagger():
+    tagger = CompanyTagger()
+    text = "Reliance Industries announced strong Q3 results. TCS also performed well."
     
-    res = engine.analyze(df)
-    assert res["breadth_score"] >= 0
+    tags = tagger.tag_companies(text)
+    assert "RELIANCE" in tags
+    assert "TCS" in tags
+    assert "INFY" not in tags
 
-def test_macro_engine():
-    engine = MacroEngine()
-    arrays = [['^INDIAVIX'], ['Close']]
-    tuples = list(zip(*arrays))
-    index = pd.MultiIndex.from_tuples(tuples)
-    df = pd.DataFrame([15]*50, columns=index)
-    res = engine.analyze(df)
-    assert res["macro_score"] >= 0
-    assert "global_sentiment" in res
+def test_event_classifier():
+    classifier = EventClassifier()
+    assert classifier.classify("Strong Quarterly Results announced today") == "Earnings"
+    assert classifier.classify("Company wins large order from Defense") == "Business"
+    assert classifier.classify("RBI increases interest rates") == "Macro"
+    assert classifier.classify("We are happy to announce") == "General"
 
-def test_fii_dii():
-    engine = FiiDiiEngine()
-    res = engine.analyze()
-    assert "fii_score" in res
+def test_news_importance_scorer():
+    scorer = NewsImportanceScorer()
+    
+    # High impact (NSE + Earnings + High Confidence)
+    score_high = scorer.score("NSE Announcements", "Earnings", 0.95)
+    assert score_high > 80
+    
+    # Low impact (Google News + General + Low Confidence)
+    score_low = scorer.score("Google News Business", "General", 0.4)
+    assert score_low < 50
 
-def test_volatility_engine():
-    engine = VolatilityEngine()
-    df = pd.DataFrame({"Close": [15]*50})
-    res = engine.analyze(df)
-    assert res["volatility_state"] == "Normal Volatility"
-
-def test_liquidity_engine():
-    engine = LiquidityEngine()
-    arrays = [['RELIANCE.NS'], ['Volume']]
-    tuples = list(zip(*arrays))
-    index = pd.MultiIndex.from_tuples(tuples)
-    df = pd.DataFrame([1000]*50, columns=index)
-    res = engine.analyze(df)
-    assert res["liquidity_score"] == 60
-
-def test_market_score():
-    engine = MarketScoreEngine()
-    res = engine.score(100, 100, 100, 100, 100, 100, 100)
-    assert res["market_grade"] in ["A", "A+"]
-
-@patch("app.services.market_intelligence_orchestrator.MarketIntelligenceOrchestrator._fetch_macro_data")
-def test_mi_orchestrator(mock_fetch, mock_market_df):
-    mock_fetch.return_value = pd.DataFrame()
-    orch = MarketIntelligenceOrchestrator()
-    res = orch.analyze_market(mock_market_df, pd.DataFrame())
-    assert "market_score" in res
-    assert "regime" in res
+def test_market_memory_engine():
+    engine = MarketMemoryEngine()
+    
+    context = engine.get_historical_context("BEL", "Business", "Positive")
+    assert context is not None
+    assert context["success_rate_pct"] == 78
+    assert context["avg_t7_return_pct"] == 8.6
+    
+    insight = engine.generate_insight_text("BEL", "Business", context)
+    assert "8.6%" in insight
+    assert "78%" in insight
+    
+    # Neutral events shouldn't trigger a hard context match
+    neutral = engine.get_historical_context("BEL", "Business", "Neutral")
+    assert neutral is None

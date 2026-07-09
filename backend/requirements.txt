@@ -64,3 +64,8 @@ catboost>=1.2.5
 # --- Phase D3: Market Data Platform ---
 redis>=5.0.0
 jugaad-data>=0.2.6
+
+# --- Phase D4: Market Intelligence Platform ---
+transformers>=4.38.0
+torch>=2.2.0
+feedparser>=6.0.10

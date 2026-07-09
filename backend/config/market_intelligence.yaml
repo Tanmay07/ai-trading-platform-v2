@@ -1,0 +1,28 @@
+providers:
+  rss:
+    enabled: true
+    sources:
+      - name: "Google News Business"
+        url: "https://news.google.com/rss/search?q=NSE+India+OR+BSE+India+when:1d&hl=en-IN&gl=IN&ceid=IN:en"
+      - name: "Moneycontrol Market"
+        url: "https://www.moneycontrol.com/rss/marketreports.xml"
+      - name: "Economic Times"
+        url: "https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms"
+  nse_announcements:
+    enabled: true
+    # Note: official NSE API needs cookies/headers which we will mock or use jugaad if applicable
+
+schedule:
+  rss: 1200 # 20 mins in seconds
+  nse: 600 # 10 mins
+
+processing:
+  deduplication_enabled: true
+  finbert_model: "ProsusAI/finbert"
+  batch_size: 16
+
+scoring_weights:
+  sentiment_strength: 0.4
+  source_quality: 0.2
+  company_size: 0.2
+  event_importance: 0.2
