@@ -50,3 +50,8 @@ joblib>=1.4.0
 # vectorbt>=1.0.0
 boto3==1.43.17
 beautifulsoup4>=4.12.0
+
+# --- Phase D1: Historical Data Lake ---
+pyarrow>=15.0.0
+fastparquet>=2024.2.0
+psycopg2-binary>=2.9.9

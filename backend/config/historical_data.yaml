@@ -1,0 +1,21 @@
+# backend/config/historical_data.yaml
+historical_data:
+  active_provider: "yahoo"
+  download:
+    batch_size: 50
+    retry_count: 5
+    retry_delay_seconds: 10
+    max_concurrent_downloads: 10
+    default_download_years: 10
+  storage:
+    base_path: "data/historical_lake"
+    s3_bucket: "ai-trading-historical-lake" # Use when S3 is enabled
+    use_s3: false # Set to true to push to S3, false for local parquet
+    metadata_db_url: "sqlite:///ai_trading_metadata.db"
+    # Postgres example: "postgresql+psycopg2://user:password@localhost/ai_trading_db"
+  validation:
+    strict_mode: true
+    allow_missing_days: 5
+  scheduler:
+    bootstrap_enabled: false
+    update_time: "18:00" # Daily run time

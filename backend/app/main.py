@@ -109,6 +109,8 @@ from app.api.research_routes import router as research_router
 
 from app.api.hfos_routes import router as hfos_router
 
+from app.api.data_platform_routes import router as data_platform_router
+
 app.include_router(discovery_router, prefix="/discovery", tags=["Discovery"])
 app.include_router(ml_router, prefix="/ml", tags=["ML"])
 app.include_router(ml_models_router, tags=["ML Models"])
@@ -119,6 +121,7 @@ app.include_router(execution_router, tags=["Execution V2"])
 app.include_router(admin_router, tags=["Admin Enterprise"])
 app.include_router(research_router, tags=["Autonomous Research"])
 app.include_router(hfos_router, tags=["Hedge Fund OS"])
+app.include_router(data_platform_router, tags=["Data Platform"])
 app.include_router(ws_router, prefix="/ws", tags=["WebSocket"])
 app.include_router(recommendation_router, tags=["Recommendations"])
 
