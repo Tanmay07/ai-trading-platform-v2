@@ -122,6 +122,10 @@ app.include_router(admin_router, tags=["Admin Enterprise"])
 app.include_router(research_router, tags=["Autonomous Research"])
 app.include_router(hfos_router, tags=["Hedge Fund OS"])
 app.include_router(data_platform_router, tags=["Data Platform"])
+
+from app.api.ml_platform_routes import router as ml_platform_router
+app.include_router(ml_platform_router)
+
 app.include_router(ws_router, prefix="/ws", tags=["WebSocket"])
 app.include_router(recommendation_router, tags=["Recommendations"])
 

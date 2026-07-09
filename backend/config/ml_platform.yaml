@@ -1,0 +1,33 @@
+# backend/config/ml_platform.yaml
+ml_platform:
+  feature_store:
+    base_path: "data/feature_store"
+    version: "v1.0"
+  
+  training:
+    horizons: [5, 7] # 5-day and 7-day targets
+    classification_thresholds:
+      strong_buy: 0.05   # 5% return
+      buy: 0.02          # 2% return
+      sell: -0.02        # -2% return
+      strong_sell: -0.05 # -5% return
+    
+    walkforward_windows:
+      train_months: 24
+      val_months: 6
+      test_months: 6
+      step_months: 3
+    
+    models:
+      - "lightgbm"
+      - "xgboost"
+      - "catboost"
+    
+  ensembling:
+    method: "soft_voting" # soft_voting, hard_voting, or stacking
+    
+  validation:
+    metrics: ["f1", "roc_auc", "accuracy", "brier_score"]
+    
+  registry:
+    base_path: "data/model_registry"
