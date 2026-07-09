@@ -165,6 +165,23 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* AI Platform Health Snapshot */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
+        {[
+          { label: 'Historical Data', status: 'Healthy', color: 'var(--signal-up)' },
+          { label: 'Model Acc.', status: '74%', color: '#a855f7' },
+          { label: 'Pred. Acc.', status: '71%', color: '#3b82f6' },
+          { label: 'Cache Hit', status: '93%', color: 'var(--signal-up)' },
+          { label: 'News API', status: 'Healthy', color: 'var(--signal-up)' },
+          { label: 'Learning DB', status: 'Healthy', color: 'var(--signal-up)' },
+        ].map(item => (
+          <GlassCard key={item.label} style={{ padding: '0.75rem', textAlign: 'center' }}>
+            <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '0.25rem' }}>{item.label}</div>
+            <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: item.color }}>{item.status}</div>
+          </GlassCard>
+        ))}
+      </div>
+
       {/* Summary Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem' }}>
         <GlassCard>

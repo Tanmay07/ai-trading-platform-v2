@@ -17,9 +17,15 @@ export default function ResearchLab() {
             <FlaskConical className="text-[var(--accent-primary)]" />
             Autonomous Research Lab
           </h1>
-          <p className="text-[var(--text-secondary)] text-sm">Phase 11: Continuous discovery of new alpha factors</p>
+          <p className="text-[var(--text-secondary)] text-sm">Phase 11 & D6: Continuous discovery & learning</p>
         </div>
-        <button className="btn btn-primary">Start New Experiment</button>
+        <div className="flex gap-2">
+          <button className="btn bg-[var(--glass-highlight)]">Datasets</button>
+          <button className="btn bg-[var(--glass-highlight)]">Feature Store</button>
+          <button className="btn bg-[var(--glass-highlight)]">Training Runs</button>
+          <button className="btn bg-[var(--glass-highlight)]">Prediction Feedback</button>
+          <button className="btn btn-primary">Start New Experiment</button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1">

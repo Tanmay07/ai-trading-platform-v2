@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { Activity, LayoutDashboard, History, Layers, Compass, Target, Brain, LineChart, Cpu, FlaskConical, Gavel, ShieldAlert } from 'lucide-react';
+import { Activity, LayoutDashboard, History, Layers, Compass, Target, Brain, LineChart, Cpu, FlaskConical, Gavel, ShieldAlert, Database, BrainCircuit, TrendingUp, Globe, ActivitySquare } from 'lucide-react';
 import './index.css';
 
 // Layout Component
@@ -23,6 +23,14 @@ function Sidebar() {
     { path: '/ai/research', label: 'Research Lab', icon: <FlaskConical size={20} /> },
     { path: '/ai/strategy', label: 'Strategy Center', icon: <Gavel size={20} /> },
     { path: '/ai/command', label: 'Command Center', icon: <ShieldAlert size={20} /> },
+  ];
+
+  const platformNavItems = [
+    { path: '/platform/data', label: 'Data Intelligence', icon: <Database size={20} /> },
+    { path: '/platform/model', label: 'Model Intelligence', icon: <BrainCircuit size={20} /> },
+    { path: '/platform/prediction', label: 'Prediction Intelligence', icon: <TrendingUp size={20} /> },
+    { path: '/platform/market-hub', label: 'Market Intelligence Hub', icon: <Globe size={20} /> },
+    { path: '/platform/health', label: 'Platform Health', icon: <ActivitySquare size={20} /> },
   ];
 
   const renderNavItems = (items) => (
@@ -92,6 +100,13 @@ function Sidebar() {
         </div>
         {renderNavItems(aiNavItems)}
       </div>
+
+      <div>
+        <div style={{ padding: '0 1rem', marginBottom: '0.5rem', fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 'bold', letterSpacing: '0.05em' }}>
+          AI Platform
+        </div>
+        {renderNavItems(platformNavItems)}
+      </div>
     </div>
   );
 }
@@ -114,6 +129,13 @@ import ResearchLab from './pages/ResearchLab';
 import StrategyCenter from './pages/StrategyCenter';
 import CommandCenter from './pages/CommandCenter';
 import AIInsightsDrawer from './components/AIInsightsDrawer';
+
+// Platform Pages (Phase F2)
+import DataIntelligence from './pages/DataIntelligence';
+import ModelIntelligence from './pages/ModelIntelligence';
+import PredictionIntelligence from './pages/PredictionIntelligence';
+import MarketIntelligenceHub from './pages/MarketIntelligenceHub';
+import PlatformHealth from './pages/PlatformHealth';
 
 function App() {
   return (
@@ -138,6 +160,13 @@ function App() {
             <Route path="/ai/research" element={<ResearchLab />} />
             <Route path="/ai/strategy" element={<StrategyCenter />} />
             <Route path="/ai/command" element={<CommandCenter />} />
+
+            {/* Platform Routes */}
+            <Route path="/platform/data" element={<DataIntelligence />} />
+            <Route path="/platform/model" element={<ModelIntelligence />} />
+            <Route path="/platform/prediction" element={<PredictionIntelligence />} />
+            <Route path="/platform/market-hub" element={<MarketIntelligenceHub />} />
+            <Route path="/platform/health" element={<PlatformHealth />} />
           </Routes>
         </main>
         <AIInsightsDrawer />

@@ -5,10 +5,12 @@ import { ShieldAlert, Activity, CheckCircle, Database, Server, ServerCrash } fro
 
 export default function CommandCenter() {
   const systemStatus = [
-    { title: "Market Data", value: "Healthy", icon: <Database size={18} />, trend: "up", subtitle: "24ms latency" },
-    { title: "AI Models", value: "9 Online", icon: <Activity size={18} />, trend: "up", subtitle: "Phase 5 Active" },
+    { title: "Market Data", value: "Healthy", icon: <Database size={18} />, trend: "up", subtitle: "Phase D3 Active" },
+    { title: "Feature Store", value: "Updated", icon: <Database size={18} />, trend: "up", subtitle: "Phase D2 Active" },
+    { title: "AI Models", value: "9 Online", icon: <Activity size={18} />, trend: "up", subtitle: "Phase D5 Active" },
+    { title: "Learning DB", value: "Healthy", icon: <Server size={18} />, trend: "up", subtitle: "Phase D6 Active" },
     { title: "Brokers", value: "Connected", icon: <Server size={18} />, trend: "up", subtitle: "Zerodha, Angel" },
-    { title: "Kubernetes", value: "Scaled", icon: <ServerCrash size={18} />, subtitle: "12 Pods" },
+    { title: "News Stream", value: "Healthy", icon: <ServerCrash size={18} />, subtitle: "Phase D4 Active" },
   ];
 
   return (
