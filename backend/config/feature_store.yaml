@@ -1,0 +1,11 @@
+feature_store:
+  db_path: "feature_store.db"
+  parquet_dir: "data/features"
+  
+  quality:
+    max_nan_pct: 0.05
+    max_corr_threshold: 0.98
+
+  incremental:
+    batch_size: 50
+    auto_repair: true

@@ -69,3 +69,4 @@ jugaad-data>=0.2.6
 transformers>=4.38.0
 torch>=2.2.0
 feedparser>=6.0.10
+pandas_ta>=0.3.14

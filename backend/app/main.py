@@ -144,6 +144,9 @@ app.include_router(bootstrap_router)
 from app.api.tradability_routes import router as tradability_router
 app.include_router(tradability_router)
 
+from app.api.feature_routes import router as feature_router
+app.include_router(feature_router)
+
 app.include_router(ws_router, prefix="/ws", tags=["WebSocket"])
 app.include_router(recommendation_router, tags=["Recommendations"])
 
