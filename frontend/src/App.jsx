@@ -34,6 +34,7 @@ function Sidebar() {
     { path: '/platform/tradability', label: 'Tradability Engine', icon: <ShieldAlert size={20} /> },
     { path: '/platform/features', label: 'Feature Intelligence', icon: <Layers size={20} /> },
     { path: '/platform/alpha', label: 'Alpha Research Lab', icon: <Microscope size={20} /> },
+    { path: '/platform/datasets', label: 'Dataset Engineering', icon: <Database size={20} /> },
   ];
 
   const renderNavItems = (items) => (
@@ -142,6 +143,7 @@ import PlatformHealth from './pages/PlatformHealth';
 import TradabilityIntelligence from './pages/TradabilityIntelligence';
 import FeatureIntelligence from './pages/FeatureIntelligence';
 import AlphaIntelligence from './pages/AlphaIntelligence';
+import DatasetIntelligence from './pages/DatasetIntelligence';
 
 function App() {
   return (
@@ -176,6 +178,7 @@ function App() {
             <Route path="/platform/tradability" element={<TradabilityIntelligence />} />
             <Route path="/platform/features" element={<FeatureIntelligence />} />
             <Route path="/platform/alpha" element={<AlphaIntelligence />} />
+            <Route path="/platform/datasets" element={<DatasetIntelligence />} />
           </Routes>
         </main>
         <AIInsightsDrawer />

@@ -1,0 +1,26 @@
+dataset_platform:
+  db_path: "dataset_registry.db"
+  storage_dir: "data/datasets"
+  
+  default_window_years: 5
+  
+  labels:
+    classification:
+      strong_buy: 0.08
+      buy: 0.04
+      sell: -0.02
+      strong_sell: -0.06
+    breakout:
+      forward_days: 5
+      target_pct: 0.05
+      
+  preprocessing:
+    missing_value_strategy: "forward_fill" # or "median", "drop"
+    outlier_strategy: "zscore" # or "iqr"
+    scaling: "robust" # robust, standard, minmax
+    
+  splitting:
+    strategy: "walkforward"
+    train_years: 3
+    val_years: 1
+    test_years: 1
