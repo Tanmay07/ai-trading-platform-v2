@@ -1,0 +1,22 @@
+committee:
+  required_votes: 4
+  total_members: 5
+  
+governance:
+  strategy_promotion_requires_human: true
+  strategy_retirement_requires_human: true
+  
+capital_allocation:
+  max_strategy_allocation_pct: 0.40
+  min_strategy_allocation_pct: 0.05
+  rebalance_frequency: "weekly"
+  
+risk_limits:
+  portfolio_var_max: 0.10
+  strategy_var_max: 0.15
+  daily_loss_limit_pct: 0.05
+  kill_switch_enabled: true
+  
+compliance:
+  restricted_sectors: ["Tobacco", "Gambling"]
+  max_single_stock_exposure_pct: 0.15
