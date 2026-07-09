@@ -1,43 +1,27 @@
 from fastapi import APIRouter
-from bootstrap_engine.manager import BootstrapManager
+from bootstrap.manager.bootstrap_manager import BootstrapManager
+import asyncio
 
-router = APIRouter(prefix="/api/bootstrap", tags=["Bootstrap Pipeline"])
+router = APIRouter(prefix="/api/bootstrap", tags=["Bootstrap Orchestrator"])
+manager = BootstrapManager()
 
+@router.get("/preflight")
+async def get_preflight_estimation():
+    return await manager.run_preflight()
+    
 @router.post("/start")
-def start_pipeline():
-    """Starts or resumes the historical data and ML bootstrap pipeline."""
-    res = BootstrapManager.start_pipeline()
-    return res
+async def start_bootstrap():
+    # In production, this would be dispatched to a background worker (e.g., Celery or asyncio.create_task)
+    # For now, we kick it off async to not block the API
+    asyncio.create_task(manager.run_bootstrap())
+    return {"status": "started", "execution_id": manager.execution_id}
 
-@router.get("/status")
-def get_status():
-    """Gets the current status of the pipeline."""
-    res = BootstrapManager.get_status()
-    return res
+@router.get("/status/{execution_id}")
+def get_bootstrap_status(execution_id: str):
+    return manager.get_status(execution_id)
 
 @router.get("/progress")
 def get_progress():
-    """Gets detailed progress metrics for the UI dashboard."""
-    status = BootstrapManager.get_status()
-    
-    # Normally we would query SymbolTask to get exact counts of pending vs downloaded
-    progress = {
-        "historical_data": {
-            "total_symbols": 2300,
-            "downloaded": 2300 if status.get("current_step", 0) > 2 else 0,
-            "validated": status.get("current_step", 0) > 3
-        },
-        "feature_store": {
-            "features_generated": 148,
-            "latest_version": "v8.2"
-        },
-        "training": {
-            "current_model": "Meta Ensemble",
-            "validation_auc": 0.74
-        },
-        "prediction": {
-            "predictions_generated": 4217 if status.get("current_step", 0) > 10 else 0
-        }
-    }
-    
-    return {"status": status, "metrics": progress}
+    # Legacy wrapper for older UI if it still hits this endpoint
+    status = manager.get_status(manager.execution_id)
+    return {"status": "Running", "metrics": {}}

@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { Activity, LayoutDashboard, History, Layers, Compass, Target, Brain, LineChart, Cpu, FlaskConical, Gavel, ShieldAlert, Database, BrainCircuit, TrendingUp, Globe, ActivitySquare } from 'lucide-react';
+import { Activity, LayoutDashboard, History, Layers, Compass, Target, Brain, LineChart, Cpu, FlaskConical, Gavel, ShieldAlert, Database, BrainCircuit, TrendingUp, Globe, ActivitySquare, Microscope, Split, PlayCircle } from 'lucide-react';
 import './index.css';
 
 // Layout Component
@@ -14,6 +14,7 @@ function Sidebar() {
     { path: '/analysis/RELIANCE.NS', label: 'Full Analysis', icon: <Activity size={20} /> },
     { path: '/market/RELIANCE.NS', label: 'Market View', icon: <Activity size={20} /> },
     { path: '/backtest', label: 'Backtesting', icon: <History size={20} /> },
+    { path: '/platform/bootstrap', label: 'Platform Bootstrap', icon: <PlayCircle size={20} /> },
   ];
 
   const aiNavItems = [
@@ -35,6 +36,7 @@ function Sidebar() {
     { path: '/platform/features', label: 'Feature Intelligence', icon: <Layers size={20} /> },
     { path: '/platform/alpha', label: 'Alpha Research Lab', icon: <Microscope size={20} /> },
     { path: '/platform/datasets', label: 'Dataset Engineering', icon: <Database size={20} /> },
+    { path: '/platform/scenarios', label: 'Scenario Generators', icon: <Split size={20} /> },
   ];
 
   const renderNavItems = (items) => (
@@ -144,6 +146,8 @@ import TradabilityIntelligence from './pages/TradabilityIntelligence';
 import FeatureIntelligence from './pages/FeatureIntelligence';
 import AlphaIntelligence from './pages/AlphaIntelligence';
 import DatasetIntelligence from './pages/DatasetIntelligence';
+import ScenarioIntelligence from './pages/ScenarioIntelligence';
+import BootstrapWizard from './pages/BootstrapWizard';
 
 function App() {
   return (
@@ -179,6 +183,9 @@ function App() {
             <Route path="/platform/features" element={<FeatureIntelligence />} />
             <Route path="/platform/alpha" element={<AlphaIntelligence />} />
             <Route path="/platform/datasets" element={<DatasetIntelligence />} />
+            <Route path="/platform/scenarios" element={<ScenarioIntelligence />} />
+            
+            <Route path="/platform/bootstrap" element={<BootstrapWizard />} />
           </Routes>
         </main>
         <AIInsightsDrawer />

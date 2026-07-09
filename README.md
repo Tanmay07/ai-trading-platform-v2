@@ -40,6 +40,13 @@ A comprehensive background scanning engine that continually analyzes the NSE uni
 - **AI Predictor:** Generates probability metrics for a 5%+ return over the next 30 days.
 - **Sector Strength:** Tracks relative momentum across sectors.
 
+### 4. Enterprise Data & AI Pipelines
+- **Historical Data Lake (Phase D1):** High-performance storage and retrieval of OHLCV data using Parquet files and Redis caching.
+- **Feature Store Platform (Phase D2):** A centralized, versioned repository of engineered Alpha Factors optimized for quantitative modeling.
+- **Alpha Registry (Phase E2.1):** A research platform that tracks Information Coefficient (IC) and stability of engineered Alpha Factors over time.
+- **Hierarchical Scenario Datasets (Phase E3.1):** Dynamically segments the NSE universe into specialized subsets (Bull Market, Sectors, High Volatility) to train expert models instead of one generic model.
+- **Intelligent Bootstrap Manager (Phase E1.5):** A resumable orchestration layer that tracks initialization stages across the platform, including a Preflight Estimation Engine.
+
 ---
 
 ## 🚀 Quick Start (macOS)
@@ -93,11 +100,13 @@ Interactive docs at **http://127.0.0.1:8000/docs**
 | GET    | `/scan`                   | Get the latest AI Discovery Scan   |
 | GET    | `/top/{category}`         | Filter top opportunities by category (e.g. `high_growth`, `value`, `momentum`) |
 
-### Market Data (`/market`)
+### AI Platform & Orchestration
 | Method | Endpoint                  | Description                        |
 |--------|---------------------------|------------------------------------|
-| GET    | `/quote/{symbol}`         | Get current price & quote          |
-| GET    | `/history/{symbol}`       | Get historical OHLCV data          |
+| GET    | `/api/bootstrap/preflight`| Run Bootstrap Preflight checks     |
+| GET    | `/api/scenarios/`         | View Scenario Generation metrics   |
+| GET    | `/api/datasets/`          | View ML Dataset Builder metrics    |
+| GET    | `/api/alpha/`             | Access the Alpha Research Registry |
 
 ### Portfolio (`/portfolio`)
 | Method | Endpoint                  | Description                        |
@@ -106,18 +115,12 @@ Interactive docs at **http://127.0.0.1:8000/docs**
 | POST   | `/`                       | Add a new holding                  |
 | DELETE | `/{symbol}`               | Remove a holding                   |
 
-### Predictions & Sentiment
-| Method | Endpoint                  | Description                        |
-|--------|---------------------------|------------------------------------|
-| GET    | `/predictions/{symbol}`   | Get AI recommendation              |
-| GET    | `/sentiment/{symbol}`     | Get FinBERT analysis of recent news|
-
 ---
 
 ## 🗓️ Roadmap
 
-- [x] Phase 1: Portfolio sync and Market Data ingestion
-- [x] Phase 2: Sentiment analysis via FinBERT and LLMs
-- [x] Phase 3: LightGBM / XGBoost ensemble prediction models
-- [x] Phase 4: AI Opportunity Discovery Background Scanner
+- [x] Phase 1-4: Core Market Data & Sentiment Discovery
+- [x] Phase D1-D2: Historical Data Lake & Feature Store
+- [x] Phase E2-E3: Alpha Registry & Scenario Datasets
+- [x] Phase E1.5: Production Bootstrap Manager
 - [ ] Phase 5: Live Trading API integrations (Broker APIs)

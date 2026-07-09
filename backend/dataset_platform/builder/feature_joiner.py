@@ -2,7 +2,8 @@ import pandas as pd
 import logging
 from alpha_registry.optimization.alpha_selector import AlphaSelector
 from feature_platform.storage.feature_store import FeatureStore
-from data_platform.historical.yahoo_provider import YahooFinanceProvider
+from data_platform.providers.yahoo_provider import YahooProvider
+from datetime import datetime
 
 logger = logging.getLogger("FeatureJoiner")
 
@@ -13,7 +14,7 @@ class FeatureJoiner:
     def __init__(self):
         self.alpha_selector = AlphaSelector()
         self.feature_store = FeatureStore()
-        self.provider = YahooFinanceProvider()
+        self.provider = YahooProvider()
         
     async def build_symbol_dataframe(self, symbol: str) -> pd.DataFrame:
         """
@@ -21,7 +22,8 @@ class FeatureJoiner:
         """
         # 1. Fetch raw OHLCV
         try:
-            ohlcv_df = await self.provider.download_historical_data(symbol, period="10y")
+            start_date = datetime(datetime.now().year - 10, datetime.now().month, datetime.now().day)
+            ohlcv_df = self.provider.get_symbol_history(symbol, start_date=start_date, end_date=datetime.now())
         except Exception as e:
             logger.error(f"Failed to fetch OHLCV for {symbol}: {e}")
             return pd.DataFrame()

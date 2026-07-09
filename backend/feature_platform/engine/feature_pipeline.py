@@ -1,8 +1,9 @@
 import logging
 from data_platform.universe.universe_manager import UniverseManager
-from data_platform.historical.yahoo_provider import YahooFinanceProvider
+from data_platform.providers.yahoo_provider import YahooProvider
 from feature_platform.engine.incremental_engine import IncrementalEngine
 from feature_platform.storage.feature_store import FeatureStore
+from datetime import datetime
 
 logger = logging.getLogger("FeaturePipeline")
 
@@ -11,7 +12,7 @@ class FeaturePipeline:
         self.incremental = IncrementalEngine()
         self.store = FeatureStore()
         self.universe = UniverseManager()
-        self.provider = YahooFinanceProvider()
+        self.provider = YahooProvider()
         
     async def run_pipeline(self, symbol: str):
         """
@@ -23,7 +24,9 @@ class FeaturePipeline:
         """
         try:
             last_date = self.store.get_last_updated_date(symbol)
-            raw_df = await self.provider.download_historical_data(symbol, period="10y")
+            # Use a robust start_date for 10 years back
+            start_date = datetime(datetime.now().year - 10, datetime.now().month, datetime.now().day)
+            raw_df = self.provider.get_symbol_history(symbol, start_date=start_date, end_date=datetime.now())
             
             if raw_df.empty:
                 return

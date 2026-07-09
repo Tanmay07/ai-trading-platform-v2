@@ -1,0 +1,26 @@
+scenario_datasets:
+  db_path: "scenario_registry.db"
+  storage_dir: "data/scenario_datasets"
+  
+  validation:
+    min_rows: 1000
+    min_symbols: 10
+    
+  regimes:
+    bull:
+      sma_fast: 50
+      sma_slow: 200
+      condition: "fast > slow"
+    bear:
+      sma_fast: 50
+      sma_slow: 200
+      condition: "fast < slow"
+      
+  volatility:
+    high: 75  # percentile
+    low: 25   # percentile
+    
+  events:
+    budget:
+      dates: ["2020-02-01", "2021-02-01", "2022-02-01", "2023-02-01", "2024-02-01"]
+      window_days: 5 # +/- 5 days

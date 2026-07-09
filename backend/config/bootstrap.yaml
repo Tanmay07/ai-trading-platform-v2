@@ -1,7 +1,22 @@
 bootstrap:
-  db_path: "bootstrap.db"
-  max_symbols: 5 # For testing the pipeline quickly without hitting Yahoo Finance 2000 times
-  batch_size: 2
-  years_of_history: 2
-  retry_attempts: 3
-  backoff_factor: 2.0
+  db_path: "bootstrap_recovery.db"
+  
+  execution:
+    parallel_workers: 4
+    timeout_minutes: 360  # 6 hours max for a full bootstrap
+    checkpoint_frequency_symbols: 50
+    max_symbols: 5 # Keeping this for safe testing
+    
+  recovery:
+    max_retries: 3
+    retry_delay_seconds: 10
+    
+  stages:
+    environment: true
+    universe: true
+    historical: true
+    features: true
+    datasets: true
+    models: true
+    predictions: true
+    portfolio: true

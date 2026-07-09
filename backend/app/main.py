@@ -153,6 +153,9 @@ app.include_router(alpha_router)
 from app.api.dataset_routes import router as dataset_router
 app.include_router(dataset_router)
 
+from app.api.scenario_routes import router as scenario_router
+app.include_router(scenario_router)
+
 app.include_router(ws_router, prefix="/ws", tags=["WebSocket"])
 app.include_router(recommendation_router, tags=["Recommendations"])
 
