@@ -138,6 +138,9 @@ app.include_router(decision_router)
 from app.api.prediction_feedback_routes import router as prediction_feedback_router
 app.include_router(prediction_feedback_router)
 
+from app.api.bootstrap_routes import router as bootstrap_router
+app.include_router(bootstrap_router)
+
 app.include_router(ws_router, prefix="/ws", tags=["WebSocket"])
 app.include_router(recommendation_router, tags=["Recommendations"])
 

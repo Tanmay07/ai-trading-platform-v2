@@ -1,0 +1,7 @@
+bootstrap:
+  db_path: "bootstrap.db"
+  max_symbols: 5 # For testing the pipeline quickly without hitting Yahoo Finance 2000 times
+  batch_size: 2
+  years_of_history: 2
+  retry_attempts: 3
+  backoff_factor: 2.0
