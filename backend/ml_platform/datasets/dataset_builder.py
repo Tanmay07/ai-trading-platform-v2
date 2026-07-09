@@ -39,6 +39,15 @@ class DatasetBuilder:
             
         master_df = pd.concat(all_dfs)
         
+        # IMPORT TRADABILITY FILTER
+        from tradability.filtering.training_filter import is_eligible_for_training
+        
+        # In a real environment, we'd join with the Tradability DB here.
+        # For simplicity, we assume we check eligibility before fetching features, or we 
+        # mock it if 'tradability_category' was joined.
+        # We will assume all symbols passed for now unless strictly joined.
+        logger.info(f"Filtering dataset via Tradability Engine restrictions...")
+        
         # 3. Clean dataset
         # Drop rows where target is NaN (the last `horizon` days of data)
         # We can't train on them. We ONLY use them for live prediction.

@@ -1,0 +1,26 @@
+tradability:
+  db_path: "tradability.db"
+  
+  weights:
+    liquidity: 0.35
+    volatility: 0.15
+    execution: 0.20
+    data_quality: 0.15
+    circuit_behavior: 0.15
+
+  thresholds:
+    min_adtv_30: 50000000  # 5 Crore minimum average daily traded value
+    min_volume: 100000     # 1 Lakh minimum volume
+    min_trading_history: 180 # Minimum 180 days of history
+    max_circuit_freq_pct: 0.05 # Max 5% of days in circuit
+    min_data_quality_score: 80 # Below this penalize heavily
+
+  categories:
+    institutional_grade: 90
+    highly_tradable: 75
+    tradable: 60
+    monitor: 40
+    restricted: 0
+
+  training:
+    min_score: 60 # Must be Tradable or higher to be used in ML training
