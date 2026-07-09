@@ -1,0 +1,24 @@
+execution:
+  active_broker: paper  # paper, zerodha, upstox, angelone, icici
+  mode: paper           # paper, live
+  
+risk_limits:
+  kill_switch_active: false
+  max_daily_loss_pct: 0.05
+  max_open_trades: 10
+  max_sector_exposure_pct: 0.30
+  max_stock_allocation_pct: 0.15
+  max_leverage: 1.0
+
+market:
+  open_time: "09:15"
+  close_time: "15:30"
+  
+retry:
+  max_retries: 3
+  retry_delay_seconds: 2
+
+notifications:
+  enabled: true
+  channels:
+    - telegram

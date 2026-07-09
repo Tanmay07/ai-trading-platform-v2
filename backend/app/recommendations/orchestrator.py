@@ -20,6 +20,7 @@ from app.ai.ai_orchestrator import AIOrchestrator
 from app.ml.ml_orchestrator import MLOrchestrator
 from app.reinforcement.rl_orchestrator import RLOrchestrator
 from app.portfolio.portfolio_orchestrator import PortfolioOrchestrator
+from app.execution.execution_orchestrator import ExecutionOrchestrator
 import asyncio
 
 logger = get_logger(__name__)
@@ -228,6 +229,13 @@ class RecommendationEngine:
             # --- PHASE 7: PORTFOLIO INTELLIGENCE ---
             # Filter and size the final recommendations
             recommendations = self.portfolio_orchestrator.filter_and_allocate(recommendations)
+            
+            # Phase 9: Execution (Mock sending the top 1 candidate if confident)
+            if recommendations:
+                top_candidate = recommendations[0]
+                if top_candidate.get("Confidence", 0) > 80:
+                    executor = ExecutionOrchestrator()
+                    executor.process_recommendation(top_candidate)
                     
         # 5. Sort by Portfolio Fit Score -> AI Confidence -> Liquidity
         recommendations.sort(

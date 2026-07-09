@@ -1,0 +1,29 @@
+database:
+  driver: "postgresql+asyncpg"
+  host: "${DB_HOST:localhost}"
+  port: 5432
+  db_name: "${DB_NAME:ai_trading}"
+  
+cache:
+  enabled: true
+  provider: "redis" # redis, memory
+  redis_url: "${REDIS_URL:redis://localhost:6379/0}"
+
+queues:
+  enabled: true
+  provider: "rabbitmq" # rabbitmq, redis, memory
+  broker_url: "${RABBITMQ_URL:amqp://guest:guest@localhost:5672/}"
+
+security:
+  jwt_secret: "${JWT_SECRET:super_secret_key}"
+  jwt_algorithm: "HS256"
+  access_token_expire_minutes: 30
+
+monitoring:
+  prometheus_enabled: true
+  tracing_enabled: true
+  log_level: "INFO"
+
+backup:
+  s3_bucket: "${BACKUP_BUCKET:ai-trading-backups}"
+  daily_db_dump: true

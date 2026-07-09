@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-trading-api
+  labels:
+    app: ai-trading-api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: ai-trading-api
+  template:
+    metadata:
+      labels:
+        app: ai-trading-api
+    spec:
+      containers:
+      - name: api
+        image: ai-trading-api:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: DB_HOST
+          valueFrom:
+            secretKeyRef:
+              name: db-secrets
+              key: host
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-trading-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: ai-trading-api
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8000
