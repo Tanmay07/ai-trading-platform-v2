@@ -1,0 +1,43 @@
+redis:
+  url: "redis://localhost:6379/0"
+  fallback_to_memory: true
+
+cache_ttl:
+  price: 900 # 15 minutes
+  index: 600 # 10 minutes
+  breadth: 900
+  sector: 1200 # 20 minutes
+  market_status: 120 # 2 minutes
+
+provider_routing:
+  historical: "d1_data_lake"
+  daily_ohlc: "bhavcopy"
+  intraday_price: ["yahoo", "jugaad"]
+  index: ["nse", "yahoo"]
+  market_status: ["nse"]
+
+priority_rules:
+  critical:
+    refresh_interval_min: 5
+  high:
+    refresh_interval_min: 15
+  medium:
+    refresh_interval_min: 30
+  low:
+    refresh_interval_min: 60
+  dormant:
+    refresh_interval_min: 1440 # end of day
+
+candidate_thresholds:
+  relative_volume: 1.5
+  breakout_proximity_pct: 0.03
+  gap_pct: 0.02
+  max_candidates: 500
+
+batching:
+  max_symbols_per_request: 50
+  retry_limits: 3
+  
+events:
+  volume_spike_multiplier: 3.0
+  breakout_proximity: 0.01

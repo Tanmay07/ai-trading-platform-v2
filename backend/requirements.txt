@@ -60,3 +60,7 @@ psycopg2-binary>=2.9.9
 # shap>=0.45.0  # Temporarily disabled due to Numba Python 3.14 compatibility
 catboost>=1.2.5
 # pandas-ta>=0.3.14 # Temporarily disabled due to Numba Python 3.14 compatibility
+
+# --- Phase D3: Market Data Platform ---
+redis>=5.0.0
+jugaad-data>=0.2.6
