@@ -1,0 +1,37 @@
+regimes:
+  Bull:
+    weights:
+      technical: 0.35
+      momentum: 0.25
+      news: 0.10
+      portfolio: 0.15
+      macro: 0.05
+      ml: 0.10
+  Bear:
+    weights:
+      technical: 0.15
+      risk: 0.30
+      macro: 0.20
+      news: 0.15
+      portfolio: 0.10
+      ml: 0.10
+  HighVolatility:
+    weights:
+      technical: 0.10
+      risk: 0.40
+      macro: 0.20
+      news: 0.10
+      portfolio: 0.10
+      ml: 0.10
+  Neutral:
+    weights:
+      technical: 0.20
+      momentum: 0.15
+      news: 0.15
+      portfolio: 0.15
+      macro: 0.10
+      ml: 0.25
+
+confidence:
+  threshold_buy: 80 # Minimum confidence out of 100 to trigger a BUY
+  threshold_sell: 80 # Minimum confidence out of 100 to trigger a SELL

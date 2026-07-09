@@ -132,6 +132,9 @@ app.include_router(market_data_router)
 from app.api.market_intelligence_routes import router as market_intelligence_router
 app.include_router(market_intelligence_router)
 
+from app.api.decision_routes import router as decision_router
+app.include_router(decision_router)
+
 app.include_router(ws_router, prefix="/ws", tags=["WebSocket"])
 app.include_router(recommendation_router, tags=["Recommendations"])
 
