@@ -1,26 +1,16 @@
-universe_filters:
-  minimum_price: 50
-  minimum_market_cap: 30000000000
-  minimum_average_volume: 500000
-  minimum_relative_volume: 1.5
-  minimum_delivery_percent: 30
-  maximum_spread: 0.5
+active_broker: "paper"   # Options: "paper", "zerodha"
+execution_mode: "manual" # Options: "manual" (requires 1-click approval), "autonomous"
 
-risk_management:
-  atr_multiplier: 1.5
-  max_portfolio_risk_percent: 2.0
-  max_position_allocation_percent: 10.0
-
-confidence_weights:
-  trend: 0.35
-  volume: 0.25
-  momentum: 0.20
-  volatility: 0.20
-
-reward_ratios:
-  target_1: 1.0
-  target_2: 2.0
-  target_3: 3.0
-
-recommendation:
-  max_count: 5
+risk_limits:
+  max_portfolio_allocation_per_trade: 0.05 # 5% max per single trade
+  max_daily_drawdown: 0.03                 # 3% max daily loss before halt
+  max_open_orders: 10
+  
+paper_trading:
+  initial_capital: 1000000.0 # 10 Lakh INR
+  commission_bps: 20         # 0.20% per trade simulated slippage/fees
+  
+zerodha:
+  api_key: ""
+  api_secret: ""
+  access_token: ""

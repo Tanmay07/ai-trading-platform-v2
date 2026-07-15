@@ -15,20 +15,11 @@ class FeatureEngine:
         self.dependency_manager.add_category("trend_features")
         self.dependency_manager.add_category("momentum_features")
         self.dependency_manager.add_category("volume_features")
-        self.dependency_manager.add_category("statistical_features")
-        self.dependency_manager.add_category("time_features")
-        self.dependency_manager.add_category("candlestick_features")
         
         # Dependent features
         self.dependency_manager.add_category("volatility_features", depends_on=["trend_features"])
         self.dependency_manager.add_category("breakout_features", depends_on=["volatility_features", "volume_features"])
-        self.dependency_manager.add_category("relative_strength", depends_on=["momentum_features", "trend_features"])
-        self.dependency_manager.add_category("market_features")
-        
-        # Future placeholders
-        self.dependency_manager.add_category("tradability_features")
-        self.dependency_manager.add_category("news_features")
-        self.dependency_manager.add_category("portfolio_features")
+        self.dependency_manager.add_category("liquidity_features", depends_on=["volume_features"])
 
     def generate_features_for_df(self, df: pd.DataFrame) -> pd.DataFrame:
         """

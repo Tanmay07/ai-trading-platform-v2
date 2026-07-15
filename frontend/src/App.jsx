@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { Activity, LayoutDashboard, History, Layers, Compass, Target, Brain, LineChart, Cpu, FlaskConical, Gavel, ShieldAlert, Database, BrainCircuit, TrendingUp, Globe, ActivitySquare, Microscope, Split, PlayCircle } from 'lucide-react';
+import { Activity, LayoutDashboard, History, Layers, Compass, Target, Brain, LineChart, Cpu, FlaskConical, Gavel, ShieldAlert, Database, BrainCircuit, TrendingUp, Globe, ActivitySquare, Microscope, Split, PlayCircle, Zap } from 'lucide-react';
 import './index.css';
 
 // Layout Component
@@ -7,6 +7,7 @@ function Sidebar() {
   const location = useLocation();
   const mainNavItems = [
     { path: '/', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
+    { path: '/live-trading', label: 'Live Trading Desk', icon: <Zap size={20} /> },
     { path: '/discovery', label: 'AI Discovery', icon: <Compass size={20} /> },
     { path: '/target-profit', label: 'Weekly Targets', icon: <Target size={20} /> },
     { path: '/paper-trading', label: 'Paper Trading', icon: <Target size={20} /> },
@@ -148,6 +149,7 @@ import AlphaIntelligence from './pages/AlphaIntelligence';
 import DatasetIntelligence from './pages/DatasetIntelligence';
 import ScenarioIntelligence from './pages/ScenarioIntelligence';
 import BootstrapWizard from './pages/BootstrapWizard';
+import LiveTradingDesk from './pages/LiveTradingDesk';
 
 function App() {
   return (
@@ -164,6 +166,7 @@ function App() {
             <Route path="/analysis/:symbol" element={<FullAnalysisDashboard />} />
             <Route path="/backtest" element={<BacktestView />} />
             <Route path="/paper-trading" element={<PaperTrading />} />
+            <Route path="/live-trading" element={<LiveTradingDesk />} />
 
             {/* New AI Routes */}
             <Route path="/ai/portfolio" element={<PortfolioIntelligence />} />

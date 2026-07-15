@@ -55,12 +55,72 @@ class UniverseManager:
 
     def refresh_universe(self):
         """
-        Detects new listings, delistings, and updates metadata.
+        Detects new listings, delistings, and updates metadata using Bhavcopy.
         """
-        logger.info("Refreshing NSE universe...")
-        # TODO: Implement actual NSE API fetching here
-        # E.g., download equity list CSV, parse, and compare with DB
-        logger.info("Universe refresh completed.")
+        logger.info("Refreshing NSE universe using latest Bhavcopy...")
+        
+        if not self.db:
+            logger.error("Cannot refresh universe without database connection.")
+            return
+
+        try:
+            from jugaad_data.nse import bhavcopy_save
+            import pandas as pd
+            import os
+            from datetime import date, timedelta
+
+            dest_dir = "data/temp_bhavcopy"
+            os.makedirs(dest_dir, exist_ok=True)
+            
+            # Step backward up to 7 days to find a valid Bhavcopy
+            target_date = date.today()
+            valid_bhavcopy_path = None
+            
+            for _ in range(7):
+                if target_date.weekday() < 5: # 0-4 are Mon-Fri
+                    try:
+                        file_path = bhavcopy_save(target_date, dest_dir)
+                        # Check if it's actually a CSV and not a 404 HTML page
+                        with open(file_path, 'r') as f:
+                            header = f.read(20)
+                            if "<html" not in header.lower() and "<!doctype" not in header.lower():
+                                valid_bhavcopy_path = file_path
+                                break
+                    except Exception as e:
+                        pass
+                target_date -= timedelta(days=1)
+                
+            if not valid_bhavcopy_path:
+                logger.error("Could not find a valid Bhavcopy in the last 7 days.")
+                return
+                
+            # Read CSV
+            df = pd.read_csv(valid_bhavcopy_path)
+            
+            # The new NSE Bhavcopy uses 'SctySrs' for Series and 'TckrSymb' for Symbol
+            if 'SctySrs' in df.columns and 'TckrSymb' in df.columns:
+                eq_df = df[df['SctySrs'] == 'EQ']
+                symbols = eq_df['TckrSymb'].unique()
+            else:
+                # Fallback to old format just in case
+                eq_df = df[df['SERIES'] == 'EQ']
+                symbols = eq_df['SYMBOL'].unique()
+            
+            added_count = 0
+            for symbol in symbols:
+                # Add to DB
+                master = SymbolMaster(
+                    symbol=symbol,
+                    company_name=f"{symbol} Limited", # Bhavcopy doesn't have company name
+                    sector="Unknown" # Sector mapping can be done via another source later
+                )
+                self.db.upsert_symbol(master)
+                added_count += 1
+                
+            logger.info(f"Universe refresh completed. {added_count} symbols loaded from Bhavcopy.")
+            
+        except Exception as e:
+            logger.error(f"Failed to refresh universe: {e}")
 
     def _get_seed_universe(self) -> List[SymbolMaster]:
         """Returns a basic list of Nifty 50 + Midcap 150 for initial testing."""

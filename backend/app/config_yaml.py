@@ -1,40 +1,42 @@
 import yaml
 from pathlib import Path
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from typing import Optional
 
 class UniverseFilters(BaseModel):
-    minimum_price: float
-    minimum_market_cap: float
-    minimum_average_volume: int
-    minimum_relative_volume: float
-    minimum_delivery_percent: float
-    maximum_spread: float
+    minimum_price: float = 10.0
+    minimum_market_cap: float = 500.0
+    minimum_average_volume: int = 100000
+    minimum_relative_volume: float = 1.0
+    minimum_delivery_percent: float = 0.3
+    maximum_spread: float = 0.05
 
 class RiskManagement(BaseModel):
-    atr_multiplier: float
-    max_portfolio_risk_percent: float
-    max_position_allocation_percent: float
+    atr_multiplier: float = 2.0
+    max_portfolio_risk_percent: float = 0.02
+    max_position_allocation_percent: float = 0.1
 
 class ConfidenceWeights(BaseModel):
-    trend: float
-    volume: float
-    momentum: float
-    volatility: float
+    trend: float = 0.3
+    volume: float = 0.2
+    momentum: float = 0.3
+    volatility: float = 0.2
 
 class RewardRatios(BaseModel):
-    target_1: float
-    target_2: float
-    target_3: float
+    target_1: float = 1.0
+    target_2: float = 2.0
+    target_3: float = 3.0
 
 class RecommendationConfig(BaseModel):
-    max_count: int
+    max_count: int = 10
 
 class TradingConfig(BaseModel):
-    universe_filters: UniverseFilters
-    risk_management: RiskManagement
-    confidence_weights: ConfidenceWeights
-    reward_ratios: RewardRatios
-    recommendation: RecommendationConfig
+    universe_filters: UniverseFilters = Field(default_factory=UniverseFilters)
+    risk_management: RiskManagement = Field(default_factory=RiskManagement)
+    confidence_weights: ConfidenceWeights = Field(default_factory=ConfidenceWeights)
+    reward_ratios: RewardRatios = Field(default_factory=RewardRatios)
+    recommendation: RecommendationConfig = Field(default_factory=RecommendationConfig)
+
 
     @classmethod
     def load(cls, config_path: str = "config/trading.yaml") -> "TradingConfig":

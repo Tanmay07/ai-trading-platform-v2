@@ -1,9 +1,8 @@
 import logging
 from data_platform.universe.universe_manager import UniverseManager
-from data_platform.providers.yahoo_provider import YahooProvider
+from data_platform.storage.parquet_manager import ParquetManager
 from feature_platform.engine.incremental_engine import IncrementalEngine
 from feature_platform.storage.feature_store import FeatureStore
-from datetime import datetime
 
 logger = logging.getLogger("FeaturePipeline")
 
@@ -12,7 +11,7 @@ class FeaturePipeline:
         self.incremental = IncrementalEngine()
         self.store = FeatureStore()
         self.universe = UniverseManager()
-        self.provider = YahooProvider()
+        self.parquet_manager = ParquetManager()
         
     async def run_pipeline(self, symbol: str):
         """
@@ -24,11 +23,12 @@ class FeaturePipeline:
         """
         try:
             last_date = self.store.get_last_updated_date(symbol)
-            # Use a robust start_date for 10 years back
-            start_date = datetime(datetime.now().year - 10, datetime.now().month, datetime.now().day)
-            raw_df = self.provider.get_symbol_history(symbol, start_date=start_date, end_date=datetime.now())
+            
+            # Use ParquetManager to fetch the raw downloaded data
+            raw_df = self.parquet_manager.load_symbol_data(symbol)
             
             if raw_df.empty:
+                logger.warning(f"[{symbol}] No historical raw data found in Parquet Lake.")
                 return
                 
             if last_date:

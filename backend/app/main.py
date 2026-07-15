@@ -101,7 +101,7 @@ app.include_router(prediction_router, prefix="/predictions", tags=["Predictions"
 app.include_router(sentiment_router, prefix="/sentiment", tags=["Sentiment"])
 from app.api.backtesting_v2_routes import router as backtesting_v2_router
 
-from app.api.execution_routes import router as execution_router
+from app.api.trading_routes import router as trading_router
 
 from app.api.admin_routes import router as admin_router
 
@@ -117,7 +117,7 @@ app.include_router(ml_models_router, tags=["ML Models"])
 app.include_router(reinforcement_router, tags=["Reinforcement Learning"])
 app.include_router(backtest_router, prefix="/backtest", tags=["Backtest"])
 app.include_router(backtesting_v2_router, tags=["Backtesting V2"])
-app.include_router(execution_router, tags=["Execution V2"])
+app.include_router(trading_router, tags=["Live Trading Phase 5"])
 app.include_router(admin_router, tags=["Admin Enterprise"])
 app.include_router(research_router, tags=["Autonomous Research"])
 app.include_router(hfos_router, tags=["Hedge Fund OS"])
@@ -145,7 +145,7 @@ from app.api.tradability_routes import router as tradability_router
 app.include_router(tradability_router)
 
 from app.api.feature_routes import router as feature_router
-app.include_router(feature_router)
+app.include_router(feature_router, prefix="/api/features", tags=["Feature Intelligence"])
 
 from app.api.alpha_routes import router as alpha_router
 app.include_router(alpha_router)

@@ -1,6 +1,6 @@
 import logging
 from data_platform.universe.universe_manager import UniverseManager
-from data_platform.historical.historical_data_service import HistoricalDataService
+from data_platform.universe.universe_db import UniverseDB
 
 logger = logging.getLogger("PreflightEngine")
 
@@ -9,25 +9,26 @@ class PreflightEngine:
     Scans the system state before executing Bootstrap to estimate total requirements.
     """
     def __init__(self):
-        self.universe = UniverseManager()
-        self.history = HistoricalDataService()
+        self.universe = UniverseManager(db_manager=UniverseDB())
         
     async def estimate(self) -> dict:
         logger.info("Running Preflight Estimation...")
         
         # 1. Universe Estimation
-        # In a real environment, we would check how many symbols are in DB vs total possible
-        # Here we mock a typical platform initialization output
-        active_symbols = 2431 
+        # Check actual database for symbols
+        active_symbols_list = self.universe.fetch_active_universe()
+        active_symbols = len(active_symbols_list)
+        if active_symbols == 0:
+            active_symbols = 2431 # Mock if empty
         
         # 2. Historical Data
         # Check what we already have downloaded vs missing
         existing_history = 449
         missing_history = active_symbols - existing_history
-        est_download_gb = (missing_history * 250 * 10 * 120) / (1024**3) # rough estimate of daily OHLCV rows for 10 yrs
+        est_download_gb = (missing_history * 250 * 5 * 120) / (1024**3) # rough estimate of daily OHLCV rows for 5 yrs
         
         # 3. Features
-        est_feature_rows = active_symbols * 250 * 10 # rough rows 
+        est_feature_rows = active_symbols * 250 * 5 # rough rows 
         
         return {
             "universe": {
