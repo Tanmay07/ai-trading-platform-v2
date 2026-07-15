@@ -92,13 +92,14 @@ from app.api.backtest_routes import router as backtest_router    # noqa: E402
 from app.api.ws_routes import router as ws_router                # noqa: E402
 from app.api.suggestion_routes import router as suggestion_router # noqa: E402
 from app.api.paper_trading_routes import router as paper_trading_router # noqa: E402
-from app.api.recommendation_routes import router as recommendation_router # noqa: E402
-app.include_router(market_router, prefix="/market", tags=["Market Data"])
-app.include_router(suggestion_router, prefix="/suggestions", tags=["Suggestions"])
-app.include_router(portfolio_router, prefix="/portfolio", tags=["Portfolio"])
+from app.api.model_routes import router as model_router
+app.include_router(model_router, prefix="/api/model", tags=["Model Intelligence"])
 app.include_router(paper_trading_router, prefix="/paper-trading", tags=["Paper Trading"])
 app.include_router(prediction_router, prefix="/predictions", tags=["Predictions"])
 app.include_router(sentiment_router, prefix="/sentiment", tags=["Sentiment"])
+app.include_router(market_router, prefix="/market", tags=["Market Data"])
+app.include_router(suggestion_router, prefix="/suggestions", tags=["Suggestions"])
+app.include_router(portfolio_router, prefix="/portfolio", tags=["Portfolio"])
 from app.api.backtesting_v2_routes import router as backtesting_v2_router
 
 from app.api.trading_routes import router as trading_router
@@ -110,6 +111,10 @@ from app.api.research_routes import router as research_router
 from app.api.hfos_routes import router as hfos_router
 
 from app.api.data_platform_routes import router as data_platform_router
+
+from app.api.scenario_routes import router as scenario_router
+from app.api.recommendation_routes import router as recommendation_router
+from app.api.training_routes import router as training_framework_router
 
 app.include_router(discovery_router, prefix="/discovery", tags=["Discovery"])
 app.include_router(ml_router, prefix="/ml", tags=["ML"])
@@ -157,7 +162,9 @@ from app.api.scenario_routes import router as scenario_router
 app.include_router(scenario_router)
 
 app.include_router(ws_router, prefix="/ws", tags=["WebSocket"])
+from app.api.recommendation_routes import router as recommendation_router
 app.include_router(recommendation_router, tags=["Recommendations"])
+app.include_router(training_framework_router)
 
 
 # ── Root Endpoints ────────────────────────────────────────────

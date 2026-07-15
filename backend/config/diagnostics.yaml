@@ -1,0 +1,11 @@
+research_lab:
+  diagnostics:
+    thresholds_to_test: [55, 60, 65, 70, 75, 80]
+    future_return_targets: [0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08]
+    top_errors_to_analyze: 100
+    top_features_to_rank: 50
+    label_warning_threshold: 0.10
+    calibration_warning_threshold: 0.15
+    regimes:
+      bull_threshold: 0.05 # Index return over 3 months > 5%
+      bear_threshold: -0.05 # Index return over 3 months < -5%

@@ -21,6 +21,7 @@ from app.ml.ml_orchestrator import MLOrchestrator
 from app.reinforcement.rl_orchestrator import RLOrchestrator
 from app.portfolio.portfolio_orchestrator import PortfolioOrchestrator
 from app.execution.execution_orchestrator import ExecutionOrchestrator
+from app.recommendations.confidence_engine import ConfidenceEngine
 import asyncio
 
 logger = get_logger(__name__)

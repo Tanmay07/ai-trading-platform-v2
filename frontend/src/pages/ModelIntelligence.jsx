@@ -1,128 +1,164 @@
-import React from 'react';
-import { BrainCircuit, Cpu, Zap, Target, LineChart, Table2, LayoutList } from 'lucide-react';
-import GlassCard from '../components/GlassCard';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar
+} from 'recharts';
+import { Activity, Beaker, Cpu, Settings, Target } from 'lucide-react';
 
-function ModelCard({ title, type, accuracy, winRate, precision, recall }) {
-  return (
-    <div className="p-4 bg-white/5 rounded-lg border border-white/10 flex flex-col gap-3">
-      <div className="flex justify-between items-center">
-        <h3 className="text-white font-semibold">{title}</h3>
-        <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full">{type}</span>
-      </div>
-      <div className="grid grid-cols-2 gap-4 mt-2">
-        <div>
-          <div className="text-xs text-gray-500">Accuracy</div>
-          <div className="text-lg font-bold text-green-400">{accuracy}%</div>
-        </div>
-        <div>
-          <div className="text-xs text-gray-500">Win Rate</div>
-          <div className="text-lg font-bold text-green-400">{winRate}%</div>
-        </div>
-        <div>
-          <div className="text-xs text-gray-500">Precision</div>
-          <div className="text-sm font-medium text-gray-300">{precision}%</div>
-        </div>
-        <div>
-          <div className="text-xs text-gray-500">Recall</div>
-          <div className="text-sm font-medium text-gray-300">{recall}%</div>
-        </div>
-      </div>
-    </div>
-  );
-}
+const API_BASE_URL = 'http://localhost:8000/api';
 
-export default function ModelIntelligence() {
-  return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-            <BrainCircuit className="text-purple-500" /> Model Intelligence
-          </h1>
-          <p className="text-sm text-gray-400 mt-1">Feature Store & Prediction Models (D2)</p>
-        </div>
-        <div className="px-3 py-1 bg-green-500/10 border border-green-500/20 text-green-400 rounded-lg text-sm font-medium flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
-          Meta Ensemble v8.4 Active
-        </div>
-      </div>
+const ModelIntelligence = () => {
+  const [modelData, setModelData] = useState(null);
+  const [trainingData, setTrainingData] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <GlassCard className="p-4 flex flex-col items-center justify-center text-center">
-          <DatabaseIcon className="text-gray-400 mb-2" size={24} />
-          <div className="text-2xl font-bold text-white">148</div>
-          <div className="text-xs text-gray-500 mt-1">Engineered Features</div>
-        </GlassCard>
-        <GlassCard className="p-4 flex flex-col items-center justify-center text-center">
-          <Cpu className="text-purple-400 mb-2" size={24} />
-          <div className="text-2xl font-bold text-white">5</div>
-          <div className="text-xs text-gray-500 mt-1">Active Models</div>
-        </GlassCard>
-        <GlassCard className="p-4 flex flex-col items-center justify-center text-center">
-          <Target className="text-green-400 mb-2" size={24} />
-          <div className="text-2xl font-bold text-white">74.2%</div>
-          <div className="text-xs text-gray-500 mt-1">Ensemble Accuracy</div>
-        </GlassCard>
-        <GlassCard className="p-4 flex flex-col items-center justify-center text-center">
-          <Zap className="text-yellow-400 mb-2" size={24} />
-          <div className="text-lg font-bold text-white">Yesterday, 23:00</div>
-          <div className="text-xs text-gray-500 mt-1">Last Training Run</div>
-        </GlassCard>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <GlassCard className="p-5 col-span-2">
-          <h2 className="text-lg font-semibold text-white mb-4">Model Registry</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <ModelCard title="XGBoost Classifier" type="Tree" accuracy="72.4" winRate="69.1" precision="68" recall="74" />
-            <ModelCard title="LightGBM Classifier" type="Tree" accuracy="73.1" winRate="70.5" precision="71" recall="72" />
-            <ModelCard title="CatBoost Classifier" type="Tree" accuracy="71.8" winRate="68.9" precision="70" recall="70" />
-            <ModelCard title="Meta Ensemble" type="Apex" accuracy="74.2" winRate="72.0" precision="73" recall="75" />
-          </div>
-        </GlassCard>
-
-        <GlassCard className="p-5">
-          <h2 className="text-lg font-semibold text-white mb-4">Top 5 Feature Importances</h2>
-          <div className="space-y-4">
-            {['RSI_14', 'Relative_Volume_5d', 'FinBERT_Sentiment', 'MACD_Hist', 'ATR_Pct'].map((feature, idx) => (
-              <div key={feature}>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-gray-300">{feature}</span>
-                  <span className="text-gray-500">{100 - (idx * 15)}%</span>
-                </div>
-                <div className="w-full bg-gray-800 rounded-full h-1.5">
-                  <div className="bg-purple-500 h-1.5 rounded-full" style={{ width: `${100 - (idx * 15)}%` }}></div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </GlassCard>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <GlassCard className="p-5 h-64 flex flex-col">
-          <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-            <LineChart size={18} className="text-blue-400" /> Training Loss / Accuracy Curve
-          </h2>
-          <div className="flex-1 flex items-center justify-center border border-white/5 bg-white/5 rounded-lg border-dashed">
-            <span className="text-gray-500 text-sm">Chart rendering pending ML integration</span>
-          </div>
-        </GlassCard>
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [modelRes, bestTrainRes, allTrainRes] = await Promise.all([
+          axios.get(`${API_BASE_URL}/model/current`).catch(() => ({ data: null })),
+          axios.get(`${API_BASE_URL}/training/best`).catch(() => ({ data: null })),
+          axios.get(`${API_BASE_URL}/training/experiments`).catch(() => ({ data: [] }))
+        ]);
         
-        <GlassCard className="p-5 h-64 flex flex-col">
-          <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-            <Table2 size={18} className="text-green-400" /> Confusion Matrix (Meta Ensemble)
-          </h2>
-          <div className="flex-1 flex items-center justify-center border border-white/5 bg-white/5 rounded-lg border-dashed">
-            <span className="text-gray-500 text-sm">Heatmap rendering pending ML integration</span>
-          </div>
-        </GlassCard>
+        setModelData(modelRes.data);
+        setTrainingData({
+            best: bestTrainRes.data,
+            all: allTrainRes.data
+        });
+      } catch (error) {
+        console.error("Failed to fetch intelligence data", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const handleRetrain = async () => {
+      alert("Initiating Institutional Training Cycle in the background...");
+      await axios.post(`${API_BASE_URL}/training/retrain`);
+  };
+
+  if (loading) return <div className="p-8 text-slate-300">Loading AI Model Metrics...</div>;
+
+  return (
+    <div className="p-8 space-y-8 animate-fade-in text-slate-100 overflow-y-auto h-full pb-20">
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-indigo-500">
+            Model Intelligence & Institutional Training
+          </h1>
+          <p className="text-slate-400 mt-2 text-sm">
+            Production Engine Status & Experiment Tracking
+          </p>
+        </div>
+        <div className="flex items-center gap-4">
+            <button onClick={handleRetrain} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-lg shadow-indigo-500/20">
+                Run Randomized Search
+            </button>
+            <div className="bg-emerald-900/40 border border-emerald-500/30 text-emerald-400 px-4 py-2 rounded-lg text-sm font-semibold flex items-center shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 mr-2 animate-pulse"></span>
+            Active Model Engine
+            </div>
+        </div>
       </div>
 
+      {trainingData && trainingData.best && Object.keys(trainingData.best).length > 0 && (
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl mb-8">
+             <div className="flex items-center gap-3 mb-6">
+                 <Activity className="text-indigo-400" />
+                 <h2 className="text-xl font-bold text-slate-200">Institutional Training Framework</h2>
+             </div>
+             
+             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-6">
+                <MetricCard title="Experiments" value={trainingData.all.length} />
+                <MetricCard title="Best Win Rate" value={`${(trainingData.best.test_metrics?.win_rate * 100 || 0).toFixed(1)}%`} />
+                <MetricCard title="Best Profit Factor" value={trainingData.best.test_metrics?.profit_factor || "N/A"} />
+                <MetricCard title="Calibration" value={trainingData.best.calibration_method || "N/A"} />
+                <MetricCard title="Opt Threshold" value={`${trainingData.best.optimal_threshold}%`} />
+                <MetricCard title="Search Time" value={`${trainingData.best.training_time_seconds}s`} />
+             </div>
+
+             <div className="bg-slate-800/50 rounded-lg p-4 mb-6 text-sm flex flex-col md:flex-row gap-8">
+                 <div>
+                     <span className="text-slate-400 block mb-1">Validation Strategy</span>
+                     <span className="text-emerald-400 font-mono">{trainingData.best.validation_strategy}</span>
+                 </div>
+                 <div>
+                     <span className="text-slate-400 block mb-1">Training Method</span>
+                     <span className="text-emerald-400 font-mono">RandomizedSearchCV (25 iter)</span>
+                 </div>
+                 <div>
+                     <span className="text-slate-400 block mb-1">Model Architecture</span>
+                     <span className="text-emerald-400 font-mono">{trainingData.best.model_version}</span>
+                 </div>
+             </div>
+
+             <h3 className="text-lg font-semibold text-slate-300 mb-4">Best Hyperparameters</h3>
+             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                 {Object.entries(trainingData.best.hyperparameters || {}).map(([key, val]) => (
+                     <div key={key} className="bg-slate-950 p-3 rounded-lg border border-slate-800">
+                         <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">{key.replace('_', ' ')}</div>
+                         <div className="text-sm text-slate-200 font-mono">{String(val)}</div>
+                     </div>
+                 ))}
+             </div>
+          </div>
+      )}
+
+      {modelData && modelData.metadata && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl"></div>
+            <h2 className="text-xl font-bold mb-6 text-slate-200">Global Feature Impact (SHAP)</h2>
+            <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                <BarChart layout="vertical" data={modelData.metadata.shap_summary.slice(0, 10).map(item => ({name: item.feature, impact: parseFloat(item.mean_abs_shap.toFixed(4))}))} margin={{ top: 10, right: 30, left: 40, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                    <XAxis type="number" stroke="#64748b" />
+                    <YAxis dataKey="name" type="category" stroke="#64748b" width={120} tick={{ fontSize: 12 }} />
+                    <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b' }} itemStyle={{ color: '#60a5fa' }} />
+                    <Bar dataKey="impact" fill="#3b82f6" radius={[0, 4, 4, 0]} />
+                </BarChart>
+                </ResponsiveContainer>
+            </div>
+            </div>
+
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl"></div>
+            <h2 className="text-xl font-bold mb-6 text-slate-200">Production Model Performance</h2>
+            <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                <RadarChart cx="50%" cy="50%" outerRadius="80%" data={[
+                    { metric: 'ROC-AUC', value: modelData.metadata.metrics.ml.roc_auc, fullMark: 1.0 },
+                    { metric: 'Precision', value: modelData.metadata.metrics.ml.precision, fullMark: 1.0 },
+                    { metric: 'Win Rate', value: modelData.metadata.metrics.trading.win_rate, fullMark: 1.0 },
+                    { metric: 'Target Hit', value: modelData.metadata.metrics.trading.target_hit_rate, fullMark: 1.0 },
+                    { metric: 'PR-AUC', value: modelData.metadata.metrics.ml.pr_auc, fullMark: 1.0 }
+                ]}>
+                    <PolarGrid stroke="#1e293b" />
+                    <PolarAngleAxis dataKey="metric" tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                    <PolarRadiusAxis angle={30} domain={[0, 1]} stroke="#334155" />
+                    <Radar name="Performance" dataKey="value" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.4} />
+                    <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b' }} />
+                </RadarChart>
+                </ResponsiveContainer>
+            </div>
+            </div>
+          </div>
+      )}
     </div>
   );
-}
+};
 
-const DatabaseIcon = ({size, className}) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+const MetricCard = ({ title, value }) => (
+  <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 relative overflow-hidden group">
+    <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+    <div className="text-slate-400 text-xs font-medium mb-1 uppercase tracking-wider">{title}</div>
+    <div className="text-xl font-bold text-slate-100 font-mono tracking-tight">{value}</div>
+  </div>
 );
+
+export default ModelIntelligence;
