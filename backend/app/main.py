@@ -92,6 +92,8 @@ from app.api.backtest_routes import router as backtest_router    # noqa: E402
 from app.api.ws_routes import router as ws_router                # noqa: E402
 from app.api.suggestion_routes import router as suggestion_router # noqa: E402
 from app.api.paper_trading_routes import router as paper_trading_router # noqa: E402
+from app.api.trade_outcomes_routes import router as trade_outcomes_router
+from app.api.validation_routes import router as validation_router
 from app.api.model_routes import router as model_router
 app.include_router(model_router, prefix="/api/model", tags=["Model Intelligence"])
 app.include_router(paper_trading_router, prefix="/paper-trading", tags=["Paper Trading"])
@@ -100,6 +102,7 @@ app.include_router(sentiment_router, prefix="/sentiment", tags=["Sentiment"])
 app.include_router(market_router, prefix="/market", tags=["Market Data"])
 app.include_router(suggestion_router, prefix="/suggestions", tags=["Suggestions"])
 app.include_router(portfolio_router, prefix="/portfolio", tags=["Portfolio"])
+app.include_router(validation_router, prefix="/api/validation", tags=["Validation Engine"])
 from app.api.backtesting_v2_routes import router as backtesting_v2_router
 
 from app.api.trading_routes import router as trading_router
@@ -107,6 +110,8 @@ from app.api.trading_routes import router as trading_router
 from app.api.admin_routes import router as admin_router
 
 from app.api.research_routes import router as research_router
+from app.api.factor_routes import router as factor_router
+from app.api.benchmark_routes import router as benchmark_router
 
 from app.api.hfos_routes import router as hfos_router
 
@@ -115,6 +120,8 @@ from app.api.data_platform_routes import router as data_platform_router
 from app.api.scenario_routes import router as scenario_router
 from app.api.recommendation_routes import router as recommendation_router
 from app.api.training_routes import router as training_framework_router
+
+from app.api.trade_outcomes_routes import router as trade_outcomes_router
 
 app.include_router(discovery_router, prefix="/discovery", tags=["Discovery"])
 app.include_router(ml_router, prefix="/ml", tags=["ML"])
@@ -125,8 +132,11 @@ app.include_router(backtesting_v2_router, tags=["Backtesting V2"])
 app.include_router(trading_router, tags=["Live Trading Phase 5"])
 app.include_router(admin_router, tags=["Admin Enterprise"])
 app.include_router(research_router, tags=["Autonomous Research"])
+app.include_router(factor_router, tags=["Factor Engine"])
+app.include_router(benchmark_router, tags=["Model Arena"])
 app.include_router(hfos_router, tags=["Hedge Fund OS"])
 app.include_router(data_platform_router, tags=["Data Platform"])
+app.include_router(trade_outcomes_router, prefix="/api/trade-outcomes", tags=["trade-outcomes"])
 
 from app.api.ml_platform_routes import router as ml_platform_router
 app.include_router(ml_platform_router)

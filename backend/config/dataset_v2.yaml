@@ -1,0 +1,15 @@
+dataset_v2:
+  paths:
+    v1_source: "data/ml_datasets/dataset_v1.parquet"
+    v2_output: "data/ml_datasets/dataset_v2.parquet"
+    registry: "data/models/dataset_registry.json"
+  
+  lineage:
+    feature_version: "FEAT-V1-20260716"
+    label_version: "LABEL-VER-20260716060209"
+    trade_engine_version: "TE-V2.0-T1-OPEN"
+    
+  validation:
+    strict_schema: true
+    allow_missing_volume: true
+    min_coverage_symbols: 700

@@ -1,0 +1,43 @@
+factor_engine:
+  dataset_v2_path: "data/ml_datasets/dataset_v2.parquet"
+  dataset_v3_path: "data/ml_datasets/dataset_v3.parquet"
+  report_path: "data/models/factor_engineering_report.json"
+  
+  # Adaptive Mode settings for future
+  adaptive_mode: false 
+  
+  factors:
+    Trend_Factor:
+      ema_alignment: 0.4
+      adx: 0.3
+      trend_persistence: 0.3
+    Relative_Strength_Factor:
+      vs_nifty50: 0.4
+      vs_sector: 0.4
+      rolling_outperformance: 0.2
+    Breakout_Quality_Factor:
+      dist_to_52w_high: 0.4
+      consolidation_length: 0.3
+      volatility_compression: 0.3
+    Volatility_Factor:
+      atr_expansion: 0.5
+      bollinger_width: 0.5
+    Liquidity_Factor:
+      relative_volume: 0.5
+      turnover: 0.5
+    Market_Breadth_Factor:
+      pct_above_ema50: 0.5
+      new_highs: 0.5
+    Regime_Factor:
+      nifty_trend: 0.5
+      india_vix: 0.5
+    Risk_Factor:
+      drawdown_profile: 0.6
+      downside_volatility: 0.4
+    Momentum_Factor:
+      rsi: 0.4
+      macd: 0.3
+      roc: 0.3
+    Institutional_Activity_Factor:
+      chaikin_money_flow: 0.5
+      vwap_deviation: 0.5

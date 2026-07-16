@@ -130,7 +130,9 @@ import PaperTrading from './pages/PaperTrading';
 
 // New AI Pages
 import PortfolioIntelligence from './pages/PortfolioIntelligence';
-import MarketIntelligence from './pages/MarketIntelligence';
+// import DiagnosticsIntelligence from './pages/DiagnosticsIntelligence';
+import TradeOutcomeIntelligence from './pages/TradeOutcomeIntelligence';
+import TradeValidationDashboard from './pages/TradeValidationDashboard';
 import AIDecisionCenter from './pages/AIDecisionCenter';
 import ResearchLab from './pages/ResearchLab';
 import StrategyCenter from './pages/StrategyCenter';
@@ -145,7 +147,9 @@ import MarketIntelligenceHub from './pages/MarketIntelligenceHub';
 import PlatformHealth from './pages/PlatformHealth';
 import TradabilityIntelligence from './pages/TradabilityIntelligence';
 import FeatureIntelligence from './pages/FeatureIntelligence';
-import AlphaIntelligence from './pages/AlphaIntelligence';
+import FactorIntelligence from './pages/FactorIntelligence';
+import ModelArena from './pages/ModelArena';
+import AlphaResearchLab from './pages/AlphaResearchLab';
 import DatasetIntelligence from './pages/DatasetIntelligence';
 import ScenarioIntelligence from './pages/ScenarioIntelligence';
 import BootstrapWizard from './pages/BootstrapWizard';
@@ -170,8 +174,10 @@ function App() {
 
             {/* New AI Routes */}
             <Route path="/ai/portfolio" element={<PortfolioIntelligence />} />
-            <Route path="/ai/market" element={<MarketIntelligence />} />
-            <Route path="/ai/decision" element={<AIDecisionCenter />} />
+            {/* <Route path="training" element={<DiagnosticsIntelligence />} /> */}
+            <Route path="outcomes" element={<TradeOutcomeIntelligence />} />
+            <Route path="validation" element={<TradeValidationDashboard />} />
+            {/* <Route path="models" element={<ModelsList />} /> */}
             <Route path="/ai/research" element={<ResearchLab />} />
             <Route path="/ai/strategy" element={<StrategyCenter />} />
             <Route path="/ai/command" element={<CommandCenter />} />
@@ -184,7 +190,9 @@ function App() {
             <Route path="/platform/health" element={<PlatformHealth />} />
             <Route path="/platform/tradability" element={<TradabilityIntelligence />} />
             <Route path="/platform/features" element={<FeatureIntelligence />} />
-            <Route path="/platform/alpha" element={<AlphaIntelligence />} />
+            <Route path="/platform/factor-intel" element={<FactorIntelligence />} />
+            <Route path="/platform/model" element={<ModelArena />} />
+            <Route path="/platform/alpha" element={<AlphaResearchLab />} />
             <Route path="/platform/datasets" element={<DatasetIntelligence />} />
             <Route path="/platform/scenarios" element={<ScenarioIntelligence />} />
             

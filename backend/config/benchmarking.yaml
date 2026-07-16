@@ -1,0 +1,22 @@
+benchmarking:
+  dataset_path: "data/ml_datasets/dataset_v3.parquet"
+  report_path: "data/models/benchmark_report.json"
+  sample_size: 50000 # Use sample for rapid ablation on dev machines
+  
+  feature_modes:
+    - raw
+    - factors
+    - hybrid
+    
+  promotion_rules:
+    min_roc_improvement: 0.02
+    min_precision20_improvement: 0.01
+    require_profit_factor_improvement: true
+    require_research_confidence_improvement: true
+    
+  ablation:
+    enabled: true
+    
+  interaction_depth: 2
+  
+  stability_window: "rolling_12_months"

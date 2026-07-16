@@ -1,0 +1,32 @@
+# Trade Outcome & Label Configuration
+# Controls default parameters for generating labels in Phase E3.3
+
+trade_rules:
+  # Holding period in trading days
+  holding_period: 7
+  
+  # When to execute the trade after signal generation
+  entry_execution: "next_day_open"
+  
+  # Minimum percentage profit required before exit is triggered
+  profit_target: 5.0
+  
+  # Maximum percentage loss tolerated before exit is triggered (Stop Loss)
+  stop_loss: 2.5
+  
+  # Percentage of the cross-sectional universe to label as Positive for ranking labels
+  ranking_percentage: 5.0
+  
+  # Metric used to rank trades cross-sectionally
+  ranking_metric: "trade_quality_score"
+  
+  # Institutional Trade Quality Score Weights
+  quality_weights:
+    profit: 0.30
+    risk: 0.20
+    reward_risk: 0.20
+    speed: 0.15
+    volatility: 0.15
+
+# Current active label strategy to use for training production models
+label_strategy: "trade_success" # Options: baseline, trade_success, ranking

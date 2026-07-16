@@ -20,7 +20,7 @@ class TrainingRunner:
         self.threshold_opt = ThresholdOptimizer()
         self.tracker = ExperimentTracker()
         
-    def run_training_cycle(self) -> Dict[str, Any]:
+    def run_training_cycle(self, df: pd.DataFrame = None) -> Dict[str, Any]:
         """
         Executes Phase 3 Nested Validation:
         1. Loads data and extracts train (2019-2023) and test (2024+).
@@ -35,16 +35,18 @@ class TrainingRunner:
         logger.info("Starting Institutional Training Cycle...")
         
         # 1. Load Data
-        df = self.loader.load_dataset()
+        if df is None:
+            df = self.loader.load_dataset()
+            
+            drop_cols = [c for c in df.columns if c.startswith('Target_') and c != 'Target_Breakout_Success']
+            if 'symbol' in df.columns:
+                drop_cols.append('symbol')
+                
+            df = self.loader.perform_feature_selection(df, drop_cols=drop_cols)
+            
         if 'Target_Breakout_Success' not in df.columns:
             logger.warning("Target_Breakout_Success missing. Creating synthetic label from Target_Return_5d for testing.")
             df['Target_Breakout_Success'] = df['Target_Return_5d'] > 0.03
-            
-        drop_cols = [c for c in df.columns if c.startswith('Target_') and c != 'Target_Breakout_Success']
-        if 'symbol' in df.columns:
-            drop_cols.append('symbol')
-            
-        df = self.loader.perform_feature_selection(df, drop_cols=drop_cols)
         
         # We MUST sort the dataframe chronologically for TimeSeriesSplit to work
         # Otherwise, if it is sorted by Symbol, the train/test splits will just split symbols instead of time.

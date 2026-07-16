@@ -1,0 +1,16 @@
+# Validation Configuration
+
+validation_rules:
+  # Float precision epsilon for targets
+  float_epsilon: 1e-5
+  
+  # Sample size for manual replay verification
+  replay_sample_size: 100
+  
+  # Market regime thresholds
+  vix_high_threshold: 20.0
+  bear_market_sma_trend: "down"
+  bull_market_sma_trend: "up"
+  
+  # Random seed for reproducibility
+  random_seed: 42
