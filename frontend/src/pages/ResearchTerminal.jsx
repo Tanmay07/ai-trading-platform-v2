@@ -13,7 +13,7 @@ const ResearchTerminal = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch(`/api/executive/research/${symbol}`);
+        const response = await fetch(`http://localhost:8000/api/executive/research/${symbol}`);
         const result = await response.json();
         setData(result.research);
       } catch (e) {

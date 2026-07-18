@@ -82,3 +82,13 @@ class ModelRegistry:
         
     def get_all_models(self) -> dict:
         return self.registry["models"]
+        
+    def get_model_metadata(self, model_id: str) -> dict:
+        return self.registry["models"].get(model_id)
+        
+    def revoke_champion(self, model_id: str):
+        if self.registry["champion_id"] == model_id:
+            self.registry["champion_id"] = None
+        if model_id in self.registry["models"]:
+            self.registry["models"][model_id]["status"] = "Revoked"
+        self._save_registry()

@@ -34,5 +34,5 @@ class DailyBriefGenerator:
         # Action
         a_txt = "Action Item: Review the new buy candidates in the Decision Workspace and confirm any rebalancing required."
         
-        brief = f"### Daily Investment Brief\\n\\n**Market Update**\\n{m_txt}\\n\\n**Portfolio Update**\\n{p_txt}\\n\\n**AI Intelligence**\\n{r_txt}\\n\\n**Recommendation**\\n{a_txt}"
+        brief = f"### Daily Investment Brief\n\n**Market Update**\n{m_txt}\n\n**Portfolio Update**\n{p_txt}\n\n**AI Intelligence**\n{r_txt}\n\n**Recommendation**\n{a_txt}"
         return brief
