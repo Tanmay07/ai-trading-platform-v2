@@ -1,0 +1,21 @@
+optimizer:
+  default_model: hrp
+  rebalance_frequency: weekly
+
+constraints:
+  max_position_weight: 0.08
+  max_sector_weight: 0.25
+  max_strategy_weight: 0.40
+  max_turnover: 0.20
+
+risk:
+  target_volatility: 0.15
+  max_cvar: 0.10
+
+transaction_costs:
+  include_slippage: true
+  include_brokerage: true
+  include_market_impact: true
+
+governance:
+  automatic_rebalance: false

@@ -11,6 +11,9 @@ function Sidebar() {
     { path: '/discovery', label: 'AI Discovery', icon: <Compass size={20} /> },
     { path: '/target-profit', label: 'Weekly Targets', icon: <Target size={20} /> },
     { path: '/paper-trading', label: 'Paper Trading Engine', icon: <Target size={20} /> },
+    { path: '/alpha-research', label: 'Alpha Research Lab', icon: <Compass size={20} /> },
+    { path: '/multi-strategy', label: 'Multi-Strategy Portfolio', icon: <Layers size={20} /> },
+    { path: '/portfolio-optimizer', label: 'Portfolio Optimizer', icon: <Compass size={20} /> },
     { path: '/adaptive-intelligence', label: 'Adaptive Intelligence', icon: <Compass size={20} /> },
     { path: '/operations-center', label: 'Operations Center', icon: <Target size={20} /> },
     { path: '/screener', label: 'Sector Screener', icon: <Layers size={20} /> },
@@ -137,6 +140,9 @@ import PortfolioIntelligence from './pages/PortfolioIntelligence';
 import CommitteeIntelligence from './pages/CommitteeIntelligence';
 import AdaptiveIntelligence from './pages/AdaptiveIntelligence';
 import OperationsCenter from './pages/OperationsCenter';
+import AlphaResearchLab from './pages/AlphaResearchLab';
+import StrategyIntelligence from './pages/StrategyIntelligence';
+import PortfolioOptimizer from './pages/PortfolioOptimizer';
 
 // import DiagnosticsIntelligence from './pages/DiagnosticsIntelligence';
 import TradeOutcomeIntelligence from './pages/TradeOutcomeIntelligence';
@@ -191,6 +197,9 @@ function App() {
             <Route path="/ai/portfolio" element={<PortfolioIntelligence />} />
             <Route path="/ai/execution" element={<ExecutionIntelligence />} />
             <Route path="/committee" element={<CommitteeIntelligence />} />
+            <Route path="/alpha-research" element={<AlphaResearchLab />} />
+            <Route path="/multi-strategy" element={<StrategyIntelligence />} />
+            <Route path="/portfolio-optimizer" element={<PortfolioOptimizer />} />
             <Route path="/adaptive-intelligence" element={<AdaptiveIntelligence />} />
             <Route path="/operations-center" element={<OperationsCenter />} />
             {/* <Route path="training" element={<DiagnosticsIntelligence />} /> */}

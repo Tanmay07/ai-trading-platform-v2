@@ -117,6 +117,12 @@ app.include_router(adaptive_router, prefix="/adaptive", tags=["Adaptive Learning
 
 from app.api.operations_routes import router as operations_router
 app.include_router(operations_router, prefix="/operations", tags=["Trading Operations"])
+
+from app.api.strategy_routes import router as strategy_router
+app.include_router(strategy_router, prefix="/strategies", tags=["Multi-Strategy"])
+
+from app.api.optimizer_routes import router as optimizer_router
+app.include_router(optimizer_router, prefix="/optimizer", tags=["Portfolio Optimizer"])
 app.include_router(validation_router, prefix="/api/validation", tags=["Validation Engine"])
 from app.api.backtesting_v2_routes import router as backtesting_v2_router
 
@@ -184,6 +190,9 @@ app.include_router(alpha_router)
 
 from app.api.dataset_routes import router as dataset_router
 app.include_router(dataset_router)
+
+from app.api.research_routes import router as research_router
+app.include_router(research_router, prefix="/research", tags=["Alpha Research"])
 
 from app.api.scenario_routes import router as scenario_router
 app.include_router(scenario_router)
