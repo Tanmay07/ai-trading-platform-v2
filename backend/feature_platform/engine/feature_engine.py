@@ -18,6 +18,11 @@ class FeatureEngine:
         
         # Dependent features
         self.dependency_manager.add_category("volatility_features", depends_on=["trend_features"])
+        self.dependency_manager.add_category("price_action_features")
+        self.dependency_manager.add_category("event_features")
+        self.dependency_manager.add_category("regime_features", depends_on=["trend_features", "volatility_features"])
+        self.dependency_manager.add_category("risk_features", depends_on=["volatility_features", "trend_features"])
+        self.dependency_manager.add_category("portfolio_features")
         self.dependency_manager.add_category("breakout_features", depends_on=["volatility_features", "volume_features"])
         self.dependency_manager.add_category("liquidity_features", depends_on=["volume_features"])
 

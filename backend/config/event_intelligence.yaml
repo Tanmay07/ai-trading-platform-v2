@@ -1,0 +1,12 @@
+event_intelligence:
+  ingestion:
+    refresh_interval_minutes: 15
+  significance:
+    minimum_score: 60
+  knowledge_graph:
+    enabled: true
+  alpha_generation:
+    automatic: false
+
+governance:
+  human_review_required: true

@@ -1,0 +1,41 @@
+market_regime:
+  detection:
+    update_frequency: "daily"
+    ensemble: true
+    models:
+      - name: "hmm_model"
+        weight: 0.35
+      - name: "gmm_clustering"
+        weight: 0.25
+      - name: "gradient_boosting"
+        weight: 0.30
+      - name: "rule_based_overlay"
+        weight: 0.10
+  
+  transition:
+    forecasting_horizon_days: 20
+    digital_twin_paths: 1000
+
+  adaptation:
+    automatic_strategy_recommendations: true
+    automatic_execution: false
+
+governance:
+  human_review_required: true
+
+taxonomy:
+  - id: "strong_bull"
+    label: "Strong Bull"
+    description: "High momentum, broad participation, stable volatility."
+  - id: "weak_bull"
+    label: "Weak Bull"
+    description: "Upward drift, narrowing breadth, low volatility."
+  - id: "high_volatility_expansion"
+    label: "High Volatility Expansion"
+    description: "Widening ranges, erratic momentum, high VIX."
+  - id: "panic"
+    label: "Panic / Crash"
+    description: "Violent selloffs, max correlation, extreme VIX."
+  - id: "recovery"
+    label: "Recovery"
+    description: "V-shaped bounces, easing volatility, mean reversion dominant."

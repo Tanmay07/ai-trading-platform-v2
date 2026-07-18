@@ -123,6 +123,12 @@ app.include_router(strategy_router, prefix="/strategies", tags=["Multi-Strategy"
 
 from app.api.optimizer_routes import router as optimizer_router
 app.include_router(optimizer_router, prefix="/optimizer", tags=["Portfolio Optimizer"])
+
+from app.api.event_routes import router as event_router
+app.include_router(event_router, prefix="/events", tags=["Event Intelligence"])
+
+from app.api.regime_routes import router as regime_router
+app.include_router(regime_router, prefix="/regime", tags=["Market Regime"])
 app.include_router(validation_router, prefix="/api/validation", tags=["Validation Engine"])
 from app.api.backtesting_v2_routes import router as backtesting_v2_router
 

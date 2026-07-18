@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
-import { Activity, LayoutDashboard, History, Layers, Compass, Target, Brain, LineChart, Cpu, FlaskConical, Gavel, ShieldAlert, Database, BrainCircuit, TrendingUp, Globe, ActivitySquare, Microscope, Split, PlayCircle, Zap } from 'lucide-react';
+import { Activity, LayoutDashboard, History, Layers, Compass, Target, Brain, LineChart, Cpu, FlaskConical, Gavel, ShieldAlert, Database, BrainCircuit, TrendingUp, Globe, ActivitySquare, Microscope, Split, PlayCircle, Zap, Radio } from 'lucide-react';
 import './index.css';
 
 // Layout Component
@@ -14,6 +14,8 @@ function Sidebar() {
     { path: '/alpha-research', label: 'Alpha Research Lab', icon: <Compass size={20} /> },
     { path: '/multi-strategy', label: 'Multi-Strategy Portfolio', icon: <Layers size={20} /> },
     { path: '/portfolio-optimizer', label: 'Portfolio Optimizer', icon: <Compass size={20} /> },
+    { path: '/event-intelligence', label: 'Event Intelligence', icon: <Radio size={20} /> },
+    { path: '/market-regime', label: 'Market Regime & Digital Twin', icon: <ActivitySquare size={20} /> },
     { path: '/adaptive-intelligence', label: 'Adaptive Intelligence', icon: <Compass size={20} /> },
     { path: '/operations-center', label: 'Operations Center', icon: <Target size={20} /> },
     { path: '/screener', label: 'Sector Screener', icon: <Layers size={20} /> },
@@ -137,12 +139,15 @@ import PaperTradingEngine from './pages/PaperTradingEngine';
 
 // New AI Pages
 import PortfolioIntelligence from './pages/PortfolioIntelligence';
+import ExecutionIntelligence from './pages/ExecutionIntelligence';
 import CommitteeIntelligence from './pages/CommitteeIntelligence';
 import AdaptiveIntelligence from './pages/AdaptiveIntelligence';
 import OperationsCenter from './pages/OperationsCenter';
 import AlphaResearchLab from './pages/AlphaResearchLab';
 import StrategyIntelligence from './pages/StrategyIntelligence';
 import PortfolioOptimizer from './pages/PortfolioOptimizer';
+import EventIntelligence from './pages/EventIntelligence';
+import MarketRegime from './pages/MarketRegime';
 
 // import DiagnosticsIntelligence from './pages/DiagnosticsIntelligence';
 import TradeOutcomeIntelligence from './pages/TradeOutcomeIntelligence';
@@ -170,7 +175,6 @@ import FeatureIntelligence from './pages/FeatureIntelligence';
 import FactorIntelligence from './pages/FactorIntelligence';
 import ModelArena from './pages/ModelArena';
 import AlphaIntelligence from './pages/AlphaIntelligence';
-import AlphaResearchLab from './pages/AlphaResearchLab';
 import DatasetIntelligence from './pages/DatasetIntelligence';
 import ScenarioIntelligence from './pages/ScenarioIntelligence';
 import BootstrapWizard from './pages/BootstrapWizard';
@@ -200,6 +204,8 @@ function App() {
             <Route path="/alpha-research" element={<AlphaResearchLab />} />
             <Route path="/multi-strategy" element={<StrategyIntelligence />} />
             <Route path="/portfolio-optimizer" element={<PortfolioOptimizer />} />
+            <Route path="/event-intelligence" element={<EventIntelligence />} />
+            <Route path="/market-regime" element={<MarketRegime />} />
             <Route path="/adaptive-intelligence" element={<AdaptiveIntelligence />} />
             <Route path="/operations-center" element={<OperationsCenter />} />
             {/* <Route path="training" element={<DiagnosticsIntelligence />} /> */}
