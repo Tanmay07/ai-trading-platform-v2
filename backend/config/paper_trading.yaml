@@ -1,0 +1,14 @@
+paper_trading:
+  initial_capital: 1000000
+  slippage:
+    enabled: true
+    basis_points: 10
+  brokerage:
+    enabled: true
+    rate_bps: 5
+  taxes:
+    enabled: false
+  partial_fills:
+    enabled: true
+  portfolio_snapshot:
+    frequency: daily

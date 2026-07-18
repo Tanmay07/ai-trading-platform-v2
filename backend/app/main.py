@@ -105,6 +105,18 @@ app.include_router(portfolio_router, prefix="/portfolio", tags=["Portfolio"])
 
 from app.api.execution_routes import router as execution_router
 app.include_router(execution_router, prefix="/execution", tags=["Execution"])
+
+from app.api.committee_routes import router as committee_router
+app.include_router(committee_router, prefix="/committee", tags=["Committee"])
+
+from app.api.paper_trading_routes import router as paper_trading_router
+app.include_router(paper_trading_router, prefix="/paper_trading", tags=["Paper Trading"])
+
+from app.api.adaptive_routes import router as adaptive_router
+app.include_router(adaptive_router, prefix="/adaptive", tags=["Adaptive Learning"])
+
+from app.api.operations_routes import router as operations_router
+app.include_router(operations_router, prefix="/operations", tags=["Trading Operations"])
 app.include_router(validation_router, prefix="/api/validation", tags=["Validation Engine"])
 from app.api.backtesting_v2_routes import router as backtesting_v2_router
 

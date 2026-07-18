@@ -1,0 +1,14 @@
+committee:
+  approval_threshold: 80
+  review_threshold: 60
+  minimum_confidence: 70
+weights:
+  prediction: 0.40
+  portfolio: 0.30
+  execution: 0.30
+rules:
+  enforce_risk_limits: true
+  enforce_sector_limits: true
+  enforce_rr_validation: true
+audit:
+  enabled: true

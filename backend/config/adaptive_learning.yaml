@@ -1,0 +1,11 @@
+adaptive_learning:
+  enable_drift_detection: true
+  retraining:
+    automatic: false
+  thresholds:
+    feature_drift: 0.20
+    precision_drop: 0.05
+    sharpe_drop: 0.10
+    win_rate_min: 0.45
+  reporting:
+    frequency: daily

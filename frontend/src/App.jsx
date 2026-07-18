@@ -10,7 +10,9 @@ function Sidebar() {
     { path: '/live-trading', label: 'Live Trading Desk', icon: <Zap size={20} /> },
     { path: '/discovery', label: 'AI Discovery', icon: <Compass size={20} /> },
     { path: '/target-profit', label: 'Weekly Targets', icon: <Target size={20} /> },
-    { path: '/paper-trading', label: 'Paper Trading', icon: <Target size={20} /> },
+    { path: '/paper-trading', label: 'Paper Trading Engine', icon: <Target size={20} /> },
+    { path: '/adaptive-intelligence', label: 'Adaptive Intelligence', icon: <Compass size={20} /> },
+    { path: '/operations-center', label: 'Operations Center', icon: <Target size={20} /> },
     { path: '/screener', label: 'Sector Screener', icon: <Layers size={20} /> },
     { path: '/analysis/RELIANCE.NS', label: 'Full Analysis', icon: <Activity size={20} /> },
     { path: '/market/RELIANCE.NS', label: 'Market View', icon: <Activity size={20} /> },
@@ -21,6 +23,7 @@ function Sidebar() {
   const aiNavItems = [
     { path: '/ai/portfolio', label: 'Portfolio Intelligence', icon: <LineChart size={20} /> },
     { path: '/ai/execution', label: 'Execution Intelligence', icon: <Target size={20} /> },
+    { path: '/ai/committee', label: 'Investment Committee', icon: <Gavel size={20} /> },
     { path: '/ai/market', label: 'Market Intelligence', icon: <Activity size={20} /> },
     { path: '/ai/decision', label: 'AI Decision Center', icon: <Cpu size={20} /> },
     { path: '/ai/research', label: 'Research Lab', icon: <FlaskConical size={20} /> },
@@ -127,11 +130,14 @@ import ScreenerView from './pages/ScreenerView';
 import DiscoveryView from './pages/DiscoveryView';
 import FullAnalysisDashboard from './pages/FullAnalysisDashboard';
 import TargetProfitSuggestions from './pages/TargetProfitSuggestions';
-import PaperTrading from './pages/PaperTrading';
+import PaperTradingEngine from './pages/PaperTradingEngine';
 
 // New AI Pages
 import PortfolioIntelligence from './pages/PortfolioIntelligence';
-import ExecutionIntelligence from './pages/ExecutionIntelligence';
+import CommitteeIntelligence from './pages/CommitteeIntelligence';
+import AdaptiveIntelligence from './pages/AdaptiveIntelligence';
+import OperationsCenter from './pages/OperationsCenter';
+
 // import DiagnosticsIntelligence from './pages/DiagnosticsIntelligence';
 import TradeOutcomeIntelligence from './pages/TradeOutcomeIntelligence';
 import TradeValidationDashboard from './pages/TradeValidationDashboard';
@@ -178,12 +184,15 @@ function App() {
             <Route path="/market/:symbol" element={<MarketView />} />
             <Route path="/analysis/:symbol" element={<FullAnalysisDashboard />} />
             <Route path="/backtest" element={<BacktestView />} />
-            <Route path="/paper-trading" element={<PaperTrading />} />
+            <Route path="/paper-trading" element={<PaperTradingEngine />} />
             <Route path="/live-trading" element={<LiveTradingDesk />} />
 
             {/* New AI Routes */}
             <Route path="/ai/portfolio" element={<PortfolioIntelligence />} />
             <Route path="/ai/execution" element={<ExecutionIntelligence />} />
+            <Route path="/committee" element={<CommitteeIntelligence />} />
+            <Route path="/adaptive-intelligence" element={<AdaptiveIntelligence />} />
+            <Route path="/operations-center" element={<OperationsCenter />} />
             {/* <Route path="training" element={<DiagnosticsIntelligence />} /> */}
             <Route path="outcomes" element={<TradeOutcomeIntelligence />} />
             <Route path="validation" element={<TradeValidationDashboard />} />

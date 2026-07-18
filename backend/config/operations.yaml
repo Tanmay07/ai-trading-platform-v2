@@ -1,0 +1,15 @@
+operations:
+  scheduler:
+    enabled: true
+    timezone: Asia/Kolkata
+  retries:
+    max_attempts: 3
+    backoff_seconds: 30
+  monitoring:
+    health_check_interval: 60
+  reporting:
+    daily_report_time: "08:20"
+alerts:
+  email: false
+  slack: false
+  teams: false
