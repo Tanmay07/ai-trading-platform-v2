@@ -8,7 +8,7 @@ import numpy as np
 logger = logging.getLogger("HyperparameterTuner")
 
 class RandomizedHyperparameterSearch:
-    def __init__(self, trainer_class, search_space: Dict[str, List[Any]], cv_engine, n_iter: int = 10, target_metric: str = "roc_auc"):
+    def __init__(self, trainer_class, search_space: Dict[str, List[Any]], cv_engine, n_iter: int = 10, target_metric: str = "roc_auc", trainer_kwargs: Dict[str, Any] = None):
         """
         Custom Randomized Hyperparameter Search using a specified CV engine (e.g., Purged Walk-Forward).
         
@@ -18,12 +18,14 @@ class RandomizedHyperparameterSearch:
             cv_engine: An instance of the cross-validator (must implement .split(df)).
             n_iter: Number of random combinations to try.
             target_metric: The metric to optimize (we assume higher is better).
+            trainer_kwargs: Additional arguments to pass to the trainer constructor.
         """
         self.trainer_class = trainer_class
         self.search_space = search_space
         self.cv_engine = cv_engine
         self.n_iter = n_iter
         self.target_metric = target_metric
+        self.trainer_kwargs = trainer_kwargs or {}
         self.trials = []
         
     def _sample_params(self) -> Dict[str, Any]:
@@ -66,7 +68,7 @@ class RandomizedHyperparameterSearch:
                 X_val, y_val = val_df[features], val_df[target_col]
                 
                 # Instantiate trainer with these params
-                trainer = self.trainer_class(params=params)
+                trainer = self.trainer_class(params=params, **self.trainer_kwargs)
                 
                 # Train the model (assumes early stopping is handled in trainer if eval sets are provided)
                 trainer.train(X_train, y_train, X_val, y_val)

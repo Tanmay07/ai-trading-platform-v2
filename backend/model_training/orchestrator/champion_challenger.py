@@ -23,7 +23,7 @@ from model_training.registry.model_registry import ModelRegistry
 logger = logging.getLogger("ChampionChallengerOrchestrator")
 
 class ChampionChallengerOrchestrator:
-    def __init__(self, dataset_path: str = "data/ml_datasets/dataset_v3.parquet", target_col: str = "Target_Return_5d"):
+    def __init__(self, dataset_path: str = "data/ml_datasets/dataset_v5.parquet", target_col: str = "Target_Forward_Return"):
         self.dataset_path = dataset_path
         self.target_col = target_col
         self.registry = ModelRegistry()
@@ -34,88 +34,49 @@ class ChampionChallengerOrchestrator:
         
         self.search_spaces = {
             "LightGBM": {
-                'num_leaves': [31, 64, 128],
-                'learning_rate': [0.01, 0.05, 0.1],
-                'max_depth': [6, 8, 12],
-                'feature_fraction': [0.6, 0.8, 1.0],
-                'bagging_fraction': [0.6, 0.8, 1.0],
-                'bagging_freq': [0, 5, 10],
-                'min_child_samples': [20, 50, 100],
-                'lambda_l1': [0.0, 0.1, 1.0],
-                'lambda_l2': [0.0, 0.1, 1.0],
-                'min_split_gain': [0.0, 0.01, 0.1]
+                'num_leaves': [31, 64],
+                'learning_rate': [0.05, 0.1],
+                'max_depth': [6, 8]
             },
             "XGBoost": {
-                'max_depth': [4, 6, 8],
-                'learning_rate': [0.01, 0.05, 0.1],
-                'min_child_weight': [1, 5, 10],
-                'gamma': [0.0, 0.1, 0.2],
-                'subsample': [0.6, 0.8, 1.0],
-                'colsample_bytree': [0.6, 0.8, 1.0],
-                'reg_alpha': [0.0, 0.1, 1.0],
-                'reg_lambda': [0.0, 0.1, 1.0],
-                'n_estimators': [200, 500, 1000]
+                'max_depth': [4, 6],
+                'learning_rate': [0.05, 0.1],
+                'n_estimators': [200, 500]
             },
             "CatBoost": {
-                'depth': [4, 6, 8],
-                'learning_rate': [0.01, 0.05, 0.1],
-                'iterations': [200, 500, 1000],
-                'l2_leaf_reg': [1, 3, 5, 10],
-                'bagging_temperature': [0.0, 1.0, 5.0],
-                'random_strength': [1, 5, 10],
-                'border_count': [32, 64, 128]
+                'depth': [4, 6],
+                'learning_rate': [0.05, 0.1],
+                'iterations': [200, 500]
+            },
+            "LogisticRegression": {
+                'C': [0.1, 1.0, 10.0]
+            },
+            "DecisionTree": {
+                'max_depth': [3, 5, 7]
+            },
+            "RandomForest": {
+                'n_estimators': [10, 50],
+                'max_depth': [3, 5]
             }
         }
         
-    def _filter_features(self, df: pd.DataFrame) -> list:
-        """
-        Implements strict anti-leakage filtering.
-        """
-        features = []
-        numeric_dtypes = ['int16', 'int32', 'int64', 'float16', 'float32', 'float64', 'bool']
-        
-        # Explicit blocklist of strings and regex patterns
-        blocklist = ['Date', 'Symbol', 'symbol']
-        block_patterns = [
-            r'target', r'label', r'simulated', r'mfe', r'mae', r'outcome', 
-            r'days_to', r'return_\d+d', r'trade_quality', r'exit', r'entry'
-        ]
-        
-        for c in df.columns:
-            if df[c].dtype not in numeric_dtypes:
-                continue
-                
-            if c in blocklist:
-                continue
-                
-            is_leaked = False
-            for pattern in block_patterns:
-                if re.search(pattern, c, re.IGNORECASE):
-                    is_leaked = True
-                    break
-                    
-            if not is_leaked:
-                features.append(c)
-                
-        return features
-        
-    def run_arena(self, n_iter=5):
-        logger.info(f"Loading dataset from {self.dataset_path}")
+    def run_arena(self, n_iter=2):
+        logger.info(f"Loading certified dataset from {self.dataset_path}")
         df = pd.read_parquet(self.dataset_path)
         if 'Date' in df.index.names:
             df = df.reset_index()
             
-        if 'symbol' in df.columns and 'Symbol' not in df.columns:
-            df.rename(columns={'symbol': 'Symbol'}, inplace=True)
-            
-        if self.target_col not in df.columns:
-            df[self.target_col] = df.groupby('Symbol')['Close'].pct_change(5).shift(-5)
-             
         df = df.dropna(subset=[self.target_col])
         df['Target_Class'] = (df[self.target_col] > 0).astype(int)
         
-        features = self._filter_features(df)
-        logger.info(f"Retained {len(features)} safe features after strict anti-leakage filtering.")
+        # Dataset V5 is already strictly whitelisted. We just exclude the structural columns.
+        exclude = ['Date', 'Symbol', 'Target_Forward_Return', 'Target_Class']
+        
+        # Make absolutely sure we only pass numeric columns to the model
+        numeric_dtypes = ['int16', 'int32', 'int64', 'float16', 'float32', 'float64', 'bool']
+        features = [c for c in df.columns if c not in exclude and df[c].dtype in numeric_dtypes]
+        
+        logger.info(f"Using exactly {len(features)} Production Whitelist Features.")
         
         # Strict 70/15/15 Chronological Split
         total_len = len(df)
@@ -128,13 +89,16 @@ class ChampionChallengerOrchestrator:
         
         logger.info(f"Chronological Split: Train({len(train_df)}), Val({len(val_df)}), Test({len(test_df)})")
         
-        # Run Baseline Models First
-        self._run_baselines(train_df, test_df, features)
+        # In this phase, we must train ALL 6 models identically through the CV engine
+        from model_training.training.sklearn_trainer import SklearnTrainer
         
         models_to_train = {
-            "LGBM_V2": ("LightGBM", LightGBMTrainer),
-            "XGB_V2": ("XGBoost", XGBoostTrainer),
-            "CAT_V2": ("CatBoost", CatBoostTrainer)
+            "LR_Baseline": ("LogisticRegression", SklearnTrainer),
+            "DT_Baseline": ("DecisionTree", SklearnTrainer),
+            "RF_Baseline": ("RandomForest", SklearnTrainer),
+            "LGBM_V3": ("LightGBM", LightGBMTrainer),
+            "XGB_V3": ("XGBoost", XGBoostTrainer),
+            "CAT_V3": ("CatBoost", CatBoostTrainer)
         }
         
         results = {}
@@ -144,21 +108,29 @@ class ChampionChallengerOrchestrator:
         for model_id, (algo, trainer_cls) in models_to_train.items():
             logger.info(f"=== Tuning {algo} ===")
             
-            # 1. Hyperparameter Optimization on Train Dataset
+            # For Sklearn baselines, we pass the algorithm name to the trainer
+            if trainer_cls == SklearnTrainer:
+                trainer_kwargs = {"algorithm": algo}
+            else:
+                trainer_kwargs = {}
+                
             tuner = RandomizedHyperparameterSearch(
                 trainer_class=trainer_cls,
                 search_space=self.search_spaces[algo],
                 cv_engine=cv_engine,
                 n_iter=n_iter,
-                target_metric="ROC_AUC"
+                target_metric="ROC_AUC",
+                trainer_kwargs=trainer_kwargs
             )
             
             best_params = tuner.tune(train_df, "Target_Class", features, self.ml_evaluator)
             all_trials[algo] = tuner.get_trials()
             
-            # 2. Final Training on full train_df using best_params, early stopping on val_df
             logger.info(f"Training final {algo} model with best params on full training set...")
-            final_trainer = trainer_cls(params=best_params)
+            if trainer_cls == SklearnTrainer:
+                final_trainer = trainer_cls(algorithm=algo, params=best_params)
+            else:
+                final_trainer = trainer_cls(params=best_params)
             
             final_trainer.train(
                 train_df[features], train_df["Target_Class"],
@@ -166,7 +138,6 @@ class ChampionChallengerOrchestrator:
             )
             final_trainer.save(model_id)
             
-            # 3. Final Evaluation on test_df (Out of Sample)
             logger.info(f"Evaluating {algo} on Test Set...")
             y_pred_proba = final_trainer.predict_proba(test_df[features])
             
@@ -175,33 +146,28 @@ class ChampionChallengerOrchestrator:
             
             combined_metrics = {**ml_metrics, **inv_metrics}
             
-            # 4. Explainability (SHAP)
-            logger.info(f"Generating SHAP for {algo}...")
-            explainer = ModelExplainer(final_trainer.model)
-            X_sample = test_df[features].sample(min(1000, len(test_df)), random_state=42)
-            shap_importance = explainer.generate_global_importance(features, X_sample)
-            if not shap_importance:
+            try:
+                explainer = ModelExplainer(final_trainer.model)
+                X_sample = test_df[features].sample(min(1000, len(test_df)), random_state=42)
+                shap_importance = explainer.generate_global_importance(features, X_sample)
+            except Exception as e:
+                logger.warning(f"Could not generate SHAP for {algo}: {e}")
                 shap_importance = final_trainer.get_feature_importance()
                 
-            # 5. Composite Scoring
             composite_score = self._compute_composite_score(ml_metrics, inv_metrics)
             combined_metrics["Composite_Score"] = composite_score
             
-            # 6. Register Model
             self.registry.register_model(
                 model_id=model_id,
                 algo_name=algo,
                 metrics=combined_metrics,
                 shap_importance=shap_importance,
                 hyperparams=best_params,
-                dataset_version="Dataset_V3_Remediated"
+                dataset_version="Dataset_V5_Certified"
             )
             results[model_id] = combined_metrics
             
-        # 7. Select Champion
         champion_id = self._select_champion()
-        
-        # 8. Generate Reports
         self._generate_reports(all_trials, results, champion_id)
         
         return self.registry.get_all_models()

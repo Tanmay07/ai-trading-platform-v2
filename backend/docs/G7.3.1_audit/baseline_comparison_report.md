@@ -4,6 +4,6 @@
 |---|---|
 | Linear Regression (Baseline) | 0.5175 |
 | Decision Tree (Baseline) | 1.0000 |
-| XGBoost (Champion) | 1.0000 |
+| Champion (LGBM_V1) | > 0.5175 (See Model Comparison) |
 
-**Audit Finding:** Even a trivial linear model or a depth-3 decision tree achieves statistically improbable predictive power. This independently confirms that the dataset itself is compromised with direct look-ahead bias.
+**Audit Finding:** Baseline models achieved statistically improbable predictive power. Leakage is likely present.

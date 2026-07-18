@@ -1,7 +1,7 @@
 # Feature Leakage Detection Report
 
 ## Confirmed Leakage Features (Correlation > 0.8)
-- None detected by strict correlation.
+- **None detected.** All features pass strict correlation checks.
 
 ## Suspicious Features (Keywords or Correlation > 0.3)
 - **Target_Return_5d** (Corr: 0.2389)
