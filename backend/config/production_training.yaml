@@ -1,0 +1,17 @@
+training:
+  mode: champion # Only train the model identified by the arena
+  
+dataset:
+  version: v3
+  
+calibration:
+  enabled: true
+  
+threshold:
+  auto: true
+  
+monitoring:
+  drift_alert: true
+  
+promotion:
+  automatic: false

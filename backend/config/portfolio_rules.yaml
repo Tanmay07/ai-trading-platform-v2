@@ -1,0 +1,8 @@
+portfolio:
+  max_positions: 15
+  max_sector_exposure: 0.25
+  max_stock_weight: 0.15
+  min_sectors: 4
+  correlation_threshold: 0.85
+  allocation_strategy: score_weighted
+  rebalance_frequency: daily

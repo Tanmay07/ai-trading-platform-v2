@@ -103,6 +103,7 @@ class TrainingRunner:
         
         trainer = LightGBMTrainer(params=best_params)
         model = trainer.train(X_train_final, y_train_final, X_val_final, y_val_final)
+        self.last_trainer = trainer
         
         # 4. Calibration
         logger.info("Running Probability Calibration Optimization...")

@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import { Activity, LayoutDashboard, History, Layers, Compass, Target, Brain, LineChart, Cpu, FlaskConical, Gavel, ShieldAlert, Database, BrainCircuit, TrendingUp, Globe, ActivitySquare, Microscope, Split, PlayCircle, Zap } from 'lucide-react';
 import './index.css';
 
@@ -20,6 +20,7 @@ function Sidebar() {
 
   const aiNavItems = [
     { path: '/ai/portfolio', label: 'Portfolio Intelligence', icon: <LineChart size={20} /> },
+    { path: '/ai/execution', label: 'Execution Intelligence', icon: <Target size={20} /> },
     { path: '/ai/market', label: 'Market Intelligence', icon: <Activity size={20} /> },
     { path: '/ai/decision', label: 'AI Decision Center', icon: <Cpu size={20} /> },
     { path: '/ai/research', label: 'Research Lab', icon: <FlaskConical size={20} /> },
@@ -130,6 +131,7 @@ import PaperTrading from './pages/PaperTrading';
 
 // New AI Pages
 import PortfolioIntelligence from './pages/PortfolioIntelligence';
+import ExecutionIntelligence from './pages/ExecutionIntelligence';
 // import DiagnosticsIntelligence from './pages/DiagnosticsIntelligence';
 import TradeOutcomeIntelligence from './pages/TradeOutcomeIntelligence';
 import TradeValidationDashboard from './pages/TradeValidationDashboard';
@@ -142,6 +144,12 @@ import AIInsightsDrawer from './components/AIInsightsDrawer';
 // Platform Pages (Phase F2)
 import DataIntelligence from './pages/DataIntelligence';
 import ModelIntelligence from './pages/ModelIntelligence';
+import MetaDecisionIntelligence from './pages/MetaDecisionIntelligence';
+import TradeIntelligence from './pages/TradeIntelligence';
+import FeatureStoreIntelligence from './pages/FeatureStoreIntelligence';
+import FactorEngineIntelligence from './pages/FactorEngineIntelligence';
+import ModelArenaIntelligence from './pages/ModelArenaIntelligence';
+import ProductionIntelligence from './pages/ProductionIntelligence';
 import PredictionIntelligence from './pages/PredictionIntelligence';
 import MarketIntelligenceHub from './pages/MarketIntelligenceHub';
 import PlatformHealth from './pages/PlatformHealth';
@@ -149,6 +157,7 @@ import TradabilityIntelligence from './pages/TradabilityIntelligence';
 import FeatureIntelligence from './pages/FeatureIntelligence';
 import FactorIntelligence from './pages/FactorIntelligence';
 import ModelArena from './pages/ModelArena';
+import AlphaIntelligence from './pages/AlphaIntelligence';
 import AlphaResearchLab from './pages/AlphaResearchLab';
 import DatasetIntelligence from './pages/DatasetIntelligence';
 import ScenarioIntelligence from './pages/ScenarioIntelligence';
@@ -174,6 +183,7 @@ function App() {
 
             {/* New AI Routes */}
             <Route path="/ai/portfolio" element={<PortfolioIntelligence />} />
+            <Route path="/ai/execution" element={<ExecutionIntelligence />} />
             {/* <Route path="training" element={<DiagnosticsIntelligence />} /> */}
             <Route path="outcomes" element={<TradeOutcomeIntelligence />} />
             <Route path="validation" element={<TradeValidationDashboard />} />
@@ -192,11 +202,17 @@ function App() {
             <Route path="/platform/features" element={<FeatureIntelligence />} />
             <Route path="/platform/factor-intel" element={<FactorIntelligence />} />
             <Route path="/platform/model" element={<ModelArena />} />
-            <Route path="/platform/alpha" element={<AlphaResearchLab />} />
-            <Route path="/platform/datasets" element={<DatasetIntelligence />} />
-            <Route path="/platform/scenarios" element={<ScenarioIntelligence />} />
-            
-            <Route path="/platform/bootstrap" element={<BootstrapWizard />} />
+            <Route path="/platform/production" element={<ProductionIntelligence />} />
+            <Route path="/platform/alpha" element={<AlphaIntelligence />} />
+                
+                {/* Meta Decision Engine (Phase F) */}
+                <Route path="/platform/meta" element={<MetaDecisionIntelligence />} />
+                
+                {/* Portfolio Intelligence Engine (Phase F1) */}
+                <Route path="/platform/portfolio" element={<PortfolioIntelligence />} />
+                
+                {/* Fallback to Dashboard */}
+                <Route path="*" element={<Navigate to="/platform/dataset" replace />} />
           </Routes>
         </main>
         <AIInsightsDrawer />

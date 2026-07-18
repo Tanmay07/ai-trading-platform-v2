@@ -102,6 +102,9 @@ app.include_router(sentiment_router, prefix="/sentiment", tags=["Sentiment"])
 app.include_router(market_router, prefix="/market", tags=["Market Data"])
 app.include_router(suggestion_router, prefix="/suggestions", tags=["Suggestions"])
 app.include_router(portfolio_router, prefix="/portfolio", tags=["Portfolio"])
+
+from app.api.execution_routes import router as execution_router
+app.include_router(execution_router, prefix="/execution", tags=["Execution"])
 app.include_router(validation_router, prefix="/api/validation", tags=["Validation Engine"])
 from app.api.backtesting_v2_routes import router as backtesting_v2_router
 
@@ -112,6 +115,7 @@ from app.api.admin_routes import router as admin_router
 from app.api.research_routes import router as research_router
 from app.api.factor_routes import router as factor_router
 from app.api.benchmark_routes import router as benchmark_router
+from app.api.production_routes import router as production_router
 
 from app.api.hfos_routes import router as hfos_router
 
@@ -134,6 +138,7 @@ app.include_router(admin_router, tags=["Admin Enterprise"])
 app.include_router(research_router, tags=["Autonomous Research"])
 app.include_router(factor_router, tags=["Factor Engine"])
 app.include_router(benchmark_router, tags=["Model Arena"])
+app.include_router(production_router, tags=["Production Model"])
 app.include_router(hfos_router, tags=["Hedge Fund OS"])
 app.include_router(data_platform_router, tags=["Data Platform"])
 app.include_router(trade_outcomes_router, prefix="/api/trade-outcomes", tags=["trade-outcomes"])

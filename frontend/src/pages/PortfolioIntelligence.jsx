@@ -1,132 +1,172 @@
-import React, { useState } from 'react';
-import MetricCard from '../components/ui/MetricCard';
-import Badge from '../components/ui/Badge';
-import { Briefcase, TrendingUp, ShieldAlert, Activity, CheckCircle2, ChevronRight, PieChart } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 
 export default function PortfolioIntelligence() {
-  const [selectedStock, setSelectedStock] = useState(null);
+    const [portfolioData, setPortfolioData] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
 
-  const portfolioMetrics = [
-    { title: "Portfolio Score", value: "92", icon: <Activity size={18} />, trend: "up", subtitle: "Top 10%" },
-    { title: "Diversification", value: "Excellent", icon: <PieChart size={18} /> },
-    { title: "Market Exposure", value: "Moderate", icon: <TrendingUp size={18} /> },
-    { title: "Cash Available", value: "₹1,24,000", icon: <Briefcase size={18} /> },
-    { title: "Expected Return (Weekly)", value: "₹8,420", icon: <TrendingUp size={18} />, trend: "up", subtitle: "9.4%" },
-    { title: "Expected Drawdown", value: "2.8%", icon: <ShieldAlert size={18} />, trend: "down", subtitle: "Low Risk" },
-  ];
+    const buildPortfolio = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const res = await fetch('http://localhost:8000/portfolio/build', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ available_cash: 100000 })
+            });
+            if (!res.ok) throw new Error("Failed to build portfolio");
+            const data = await res.json();
+            setPortfolioData(data);
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-  const holdings = [
-    { ticker: 'BEL.NS', current: '0%', target: '3.4%', confidence: '92%', fit: '96%', expected: '9.4%', risk: 'Low', kelly: '3.4%', corr: '0.12', sector: 'Defense' },
-    { ticker: 'TCS.NS', current: '12%', target: '10%', confidence: '85%', fit: '90%', expected: '4.2%', risk: 'Low', kelly: '2.1%', corr: '0.45', sector: 'IT' },
-    { ticker: 'HDFCBANK.NS', current: '18%', target: '6%', confidence: '60%', fit: '40%', expected: '1.2%', risk: 'Medium', kelly: '0%', corr: '0.85', sector: 'Bank' },
-  ];
+    return (
+        <div className="p-8 bg-gray-900 min-h-screen text-gray-100 font-sans">
+            <div className="max-w-7xl mx-auto space-y-8">
+                
+                {/* Header */}
+                <div className="flex justify-between items-end border-b border-gray-700 pb-6">
+                    <div>
+                        <h1 className="text-4xl font-black text-white tracking-tight">Institutional Portfolio Engine</h1>
+                        <p className="text-gray-400 mt-2 text-lg">Constraint-Based Optimization Framework (Phase F1)</p>
+                    </div>
+                    <button 
+                        onClick={buildPortfolio}
+                        disabled={loading}
+                        className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-lg font-bold shadow-lg shadow-indigo-900/50 transition-all disabled:opacity-50"
+                    >
+                        {loading ? 'Optimizing...' : 'Build Optimal Portfolio'}
+                    </button>
+                </div>
 
-  return (
-    <div className="animate-fade-in flex flex-col gap-6 h-full relative">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold mb-1">Portfolio Intelligence</h1>
-          <p className="text-[var(--text-secondary)] text-sm">AI-driven analysis of your portfolio fit and correlation</p>
-        </div>
-        <Badge variant="primary">Kelly Utilization: 43%</Badge>
-      </div>
+                {error && (
+                    <div className="bg-red-900/50 border border-red-500 text-red-200 p-4 rounded-lg">
+                        {error}
+                    </div>
+                )}
 
-      {/* Top Metrics */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        {portfolioMetrics.map((m, i) => (
-          <MetricCard key={i} {...m} />
-        ))}
-      </div>
+                {portfolioData && (
+                    <motion.div 
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="space-y-8"
+                    >
+                        {/* Metrics Overview */}
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                            <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-md">
+                                <p className="text-gray-400 text-sm font-medium">Portfolio Health Score</p>
+                                <p className="text-4xl font-black text-emerald-400 mt-2">{portfolioData.metrics.health_score}/100</p>
+                            </div>
+                            <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-md">
+                                <p className="text-gray-400 text-sm font-medium">Positions Allocated</p>
+                                <p className="text-4xl font-black text-white mt-2">{portfolioData.metrics.positions_count}</p>
+                            </div>
+                            <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-md">
+                                <p className="text-gray-400 text-sm font-medium">Capital Deployed</p>
+                                <p className="text-4xl font-black text-blue-400 mt-2">
+                                    ${portfolioData.metrics.total_allocated.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}
+                                </p>
+                            </div>
+                            <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-md">
+                                <p className="text-gray-400 text-sm font-medium">Cash Reserves</p>
+                                <p className="text-4xl font-black text-gray-300 mt-2">
+                                    ${portfolioData.metrics.cash_remaining.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}
+                                </p>
+                            </div>
+                        </div>
 
-      <div className="flex gap-6 flex-1 overflow-hidden">
-        {/* Main Table */}
-        <div className="glass-panel flex-1 flex flex-col overflow-hidden">
-          <div className="p-4 border-b border-[var(--glass-border)] bg-[rgba(0,0,0,0.1)]">
-            <h3 className="font-semibold text-[var(--text-primary)]">Recommended Portfolio Adjustments</h3>
-          </div>
-          <div className="overflow-auto flex-1">
-            <table className="w-full text-sm text-left">
-              <thead className="text-[var(--text-secondary)] bg-[var(--bg-surface-elevated)] sticky top-0 z-10">
-                <tr>
-                  <th className="px-4 py-3 font-medium">Ticker</th>
-                  <th className="px-4 py-3 font-medium">Current</th>
-                  <th className="px-4 py-3 font-medium">Target</th>
-                  <th className="px-4 py-3 font-medium">Confidence</th>
-                  <th className="px-4 py-3 font-medium">Fit</th>
-                  <th className="px-4 py-3 font-medium">Risk</th>
-                  <th className="px-4 py-3 font-medium">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[var(--glass-border)]">
-                {holdings.map((h) => (
-                  <tr 
-                    key={h.ticker} 
-                    onClick={() => setSelectedStock(h)}
-                    className={`cursor-pointer transition-colors ${selectedStock?.ticker === h.ticker ? 'bg-[var(--glass-highlight)]' : 'hover:bg-[rgba(255,255,255,0.02)]'}`}
-                  >
-                    <td className="px-4 py-3 font-medium">{h.ticker.replace('.NS', '')}</td>
-                    <td className="px-4 py-3">{h.current}</td>
-                    <td className="px-4 py-3 text-[var(--text-primary)] font-medium">{h.target}</td>
-                    <td className="px-4 py-3 text-[var(--signal-up)]">{h.confidence}</td>
-                    <td className="px-4 py-3">{h.fit}</td>
-                    <td className="px-4 py-3"><Badge variant={h.risk === 'Low' ? 'success' : 'warning'}>{h.risk}</Badge></td>
-                    <td className="px-4 py-3">
-                      <button className="text-[var(--accent-primary)] hover:text-[var(--accent-hover)] transition-colors">
-                        Details <ChevronRight size={14} className="inline" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                            {/* Recommended Allocations */}
+                            <div className="lg:col-span-2 bg-gray-800 rounded-xl border border-gray-700 shadow-md overflow-hidden">
+                                <div className="p-6 border-b border-gray-700 bg-gray-800/50">
+                                    <h2 className="text-xl font-bold text-white">Recommended Allocations</h2>
+                                </div>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left border-collapse">
+                                        <thead>
+                                            <tr className="bg-gray-900/50 text-gray-400 text-xs uppercase tracking-wider">
+                                                <th className="p-4 font-semibold">Symbol</th>
+                                                <th className="p-4 font-semibold">Sector</th>
+                                                <th className="p-4 font-semibold">AI Quality</th>
+                                                <th className="p-4 font-semibold text-right">Target Weight</th>
+                                                <th className="p-4 font-semibold text-right">Allocation</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-700">
+                                            {portfolioData.portfolio.map((pos, idx) => (
+                                                <tr key={idx} className="hover:bg-gray-750 transition-colors">
+                                                    <td className="p-4 font-bold text-indigo-300">{pos.symbol}</td>
+                                                    <td className="p-4 text-gray-300 text-sm">{pos.sector}</td>
+                                                    <td className="p-4">
+                                                        <span className="bg-emerald-900/30 text-emerald-400 px-2 py-1 rounded font-mono text-sm">
+                                                            {pos.trade_quality_prediction.toFixed(1)}
+                                                        </span>
+                                                    </td>
+                                                    <td className="p-4 text-right font-mono text-gray-300">
+                                                        {(pos.weight * 100).toFixed(1)}%
+                                                    </td>
+                                                    <td className="p-4 text-right font-mono text-green-400">
+                                                        ${pos.capital_allocated.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
 
-        {/* Right Drawer (Simulated inline for layout) */}
-        {selectedStock && (
-          <div className="glass-panel w-80 flex flex-col overflow-hidden animate-fade-in border-l-[3px] border-l-[var(--accent-primary)]">
-            <div className="p-5 border-b border-[var(--glass-border)] flex justify-between items-center bg-[rgba(0,0,0,0.1)]">
-              <div>
-                <h2 className="text-xl font-bold">{selectedStock.ticker.replace('.NS', '')}</h2>
-                <div className="text-[var(--text-secondary)] text-sm">{selectedStock.sector}</div>
-              </div>
-              <Badge variant="success">BUY</Badge>
+                            {/* Sidebar Analytics */}
+                            <div className="space-y-8">
+                                {/* Sector Exposure */}
+                                <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-md">
+                                    <h2 className="text-xl font-bold text-white mb-4">Sector Exposure</h2>
+                                    <div className="space-y-4">
+                                        {Object.entries(portfolioData.metrics.sector_exposure)
+                                            .sort(([,a], [,b]) => b - a)
+                                            .map(([sector, weight], idx) => (
+                                            <div key={idx}>
+                                                <div className="flex justify-between text-sm mb-1">
+                                                    <span className="text-gray-300">{sector}</span>
+                                                    <span className="text-gray-400 font-mono">{(weight * 100).toFixed(1)}%</span>
+                                                </div>
+                                                <div className="w-full bg-gray-700 rounded-full h-2">
+                                                    <div className="bg-indigo-500 h-2 rounded-full" style={{ width: `${weight * 100}%` }}></div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Rejections */}
+                                <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-md">
+                                    <h2 className="text-xl font-bold text-white mb-1">Constraint Rejections</h2>
+                                    <p className="text-sm text-gray-400 mb-4">{portfolioData.rejected_candidates.length} opportunities blocked</p>
+                                    <div className="space-y-3 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
+                                        {portfolioData.rejected_candidates.slice(0, 10).map((rej, idx) => (
+                                            <div key={idx} className="bg-gray-900 p-3 rounded border border-red-900/30">
+                                                <div className="flex justify-between items-center mb-1">
+                                                    <span className="font-bold text-gray-300 text-sm">{rej.symbol}</span>
+                                                    <span className="text-xs text-red-400 bg-red-900/20 px-2 py-0.5 rounded">Rejected</span>
+                                                </div>
+                                                <ul className="text-xs text-gray-500 list-disc pl-4 space-y-0.5">
+                                                    {rej.rejection_reasons.map((reason, ridx) => (
+                                                        <li key={ridx}>{reason}</li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
             </div>
-            
-            <div className="p-5 flex-1 overflow-y-auto flex flex-col gap-5">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <div className="text-[var(--text-secondary)] text-xs mb-1">Portfolio Fit</div>
-                  <div className="text-lg font-bold text-[var(--signal-up)]">{selectedStock.fit}</div>
-                </div>
-                <div>
-                  <div className="text-[var(--text-secondary)] text-xs mb-1">Kelly Allocation</div>
-                  <div className="text-lg font-bold">{selectedStock.kelly}</div>
-                </div>
-                <div>
-                  <div className="text-[var(--text-secondary)] text-xs mb-1">Breakout Score</div>
-                  <div className="text-lg font-bold">94</div>
-                </div>
-                <div>
-                  <div className="text-[var(--text-secondary)] text-xs mb-1">Correlation</div>
-                  <div className="text-lg font-bold">{selectedStock.corr}</div>
-                </div>
-              </div>
-              
-              <div className="mt-2">
-                <h4 className="text-sm font-semibold mb-3 border-b border-[var(--glass-border)] pb-2">AI Reasoning</h4>
-                <ul className="text-sm space-y-2 text-[var(--text-secondary)]">
-                  <li className="flex gap-2 items-start"><CheckCircle2 size={16} className="text-[var(--signal-up)] shrink-0 mt-0.5" /> <span>Strong Breakout momentum detected</span></li>
-                  <li className="flex gap-2 items-start"><CheckCircle2 size={16} className="text-[var(--signal-up)] shrink-0 mt-0.5" /> <span>Low correlation (0.12) to existing holdings</span></li>
-                  <li className="flex gap-2 items-start"><CheckCircle2 size={16} className="text-[var(--signal-up)] shrink-0 mt-0.5" /> <span>Favorable sector rotation into Defense</span></li>
-                </ul>
-              </div>
-              
-              <button className="btn btn-primary w-full mt-auto">Execute Allocation</button>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+        </div>
+    );
 }

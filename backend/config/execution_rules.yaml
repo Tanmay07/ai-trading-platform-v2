@@ -1,0 +1,18 @@
+execution:
+  default_entry: breakout_confirmation
+  stop_loss:
+    method: atr
+    multiplier: 2.0
+  target:
+    minimum_rr: 2.0
+    partial_exit: 0.50
+  trailing_stop:
+    enabled: true
+    method: atr
+  timeout:
+    enabled: true
+    days: 5
+risk:
+  max_portfolio_risk: 0.06
+  max_trade_risk: 0.01
+  max_positions: 15
