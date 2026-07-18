@@ -40,6 +40,10 @@ function Sidebar() {
     { path: '/platform/data', label: 'Data Intelligence', icon: <Database size={20} /> },
     { path: '/platform/model', label: 'Model Intelligence', icon: <BrainCircuit size={20} /> },
     { path: '/platform/prediction', label: 'Prediction Intelligence', icon: <TrendingUp size={20} /> },
+    { path: '/platform/model-arena', label: 'G7.3 Model Arena', icon: <BrainCircuit size={20} /> },
+    { path: '/platform/paper-trading', label: 'G7.4 Paper Trading', icon: <Target size={20} /> },
+    { path: '/platform/continuous-learning', label: 'G7.4 Continuous Learning', icon: <FlaskConical size={20} /> },
+    { path: '/platform/decision-intelligence', label: 'G7.5 Decision Intelligence', icon: <ShieldAlert size={20} /> },
     { path: '/platform/market-hub', label: 'Market Intelligence Hub', icon: <Globe size={20} /> },
     { path: '/platform/health', label: 'Platform Health', icon: <ActivitySquare size={20} /> },
     { path: '/platform/tradability', label: 'Tradability Engine', icon: <ShieldAlert size={20} /> },
@@ -166,6 +170,11 @@ import TradeIntelligence from './pages/TradeIntelligence';
 import FeatureStoreIntelligence from './pages/FeatureStoreIntelligence';
 import FactorEngineIntelligence from './pages/FactorEngineIntelligence';
 import ModelArenaIntelligence from './pages/ModelArenaIntelligence';
+import PaperTradingValidation from './pages/PaperTradingValidation';
+import ContinuousLearningDashboard from './pages/ContinuousLearningDashboard';
+import DecisionIntelligenceDashboard from './pages/DecisionIntelligenceDashboard';
+import ExecutiveDashboard from './pages/ExecutiveDashboard';
+import ResearchTerminal from './pages/ResearchTerminal';
 import ProductionIntelligence from './pages/ProductionIntelligence';
 import PredictionIntelligence from './pages/PredictionIntelligence';
 import MarketIntelligenceHub from './pages/MarketIntelligenceHub';
@@ -187,7 +196,7 @@ function App() {
         <Sidebar />
         <main className="main-content">
           <Routes>
-            <Route path="/" element={<Dashboard />} />
+            <Route path="/" element={<ExecutiveDashboard />} />
             <Route path="/target-profit" element={<TargetProfitSuggestions />} />
             <Route path="/discovery" element={<DiscoveryView />} />
             <Route path="/screener" element={<ScreenerView />} />
@@ -226,6 +235,11 @@ function App() {
             <Route path="/platform/features" element={<FeatureIntelligence />} />
             <Route path="/platform/factor-intel" element={<FactorIntelligence />} />
             <Route path="/platform/model" element={<ModelArena />} />
+            <Route path="/platform/model-arena" element={<ModelArenaIntelligence />} />
+            <Route path="/platform/paper-trading" element={<PaperTradingValidation />} />
+            <Route path="/platform/continuous-learning" element={<ContinuousLearningDashboard />} />
+            <Route path="/platform/decision-intelligence" element={<DecisionIntelligenceDashboard />} />
+            <Route path="/platform/research/:symbol" element={<ResearchTerminal />} />
             <Route path="/platform/production" element={<ProductionIntelligence />} />
             <Route path="/platform/alpha" element={<AlphaIntelligence />} />
                 

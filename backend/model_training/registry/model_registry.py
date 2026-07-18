@@ -1,87 +1,84 @@
 import json
 import os
-import joblib
-from pathlib import Path
-import logging
 from datetime import datetime
 
-logger = logging.getLogger("ModelRegistry")
-
 class ModelRegistry:
-    def __init__(self, models_dir: str = "data/models"):
-        self.models_dir = Path(models_dir)
-        self.models_dir.mkdir(parents=True, exist_ok=True)
-        self.registry_path = self.models_dir / "registry.json"
-        
+    """
+    Stores and manages model metadata, validation metrics, and champion/challenger statuses.
+    """
+    def __init__(self, registry_path: str = None):
+        if registry_path is None:
+            registry_path = os.path.join(os.path.dirname(__file__), '..', '..', 'config', 'model_registry.json')
+        self.registry_path = registry_path
         self.registry = self._load_registry()
-
+        
     def _load_registry(self) -> dict:
-        if self.registry_path.exists():
+        if os.path.exists(self.registry_path):
             with open(self.registry_path, 'r') as f:
                 return json.load(f)
-        return {"models": []}
-
+        return {"models": {}, "champion_id": None}
+        
     def _save_registry(self):
+        os.makedirs(os.path.dirname(self.registry_path), exist_ok=True)
         with open(self.registry_path, 'w') as f:
             json.dump(self.registry, f, indent=4)
-
-    def register_model(self, 
-                       model, 
-                       calibrator,
-                       metadata: dict,
-                       feature_names: list,
-                       is_production: bool = True):
-        """
-        Saves the LightGBM model, calibrator, and metadata.
-        """
-        version = f"v{len(self.registry['models']) + 1}.0"
-        timestamp = datetime.utcnow().isoformat()
-        
-        # Paths
-        model_path = self.models_dir / f"lightgbm_{version}.txt"
-        calibrator_path = self.models_dir / f"calibrator_{version}.joblib"
-        features_path = self.models_dir / f"features_{version}.json"
-        
-        # Save model
-        model.save_model(str(model_path))
-        
-        # Save calibrator
-        joblib.dump(calibrator, calibrator_path)
-        
-        # Save feature names
-        with open(features_path, 'w') as f:
-            json.dump(feature_names, f)
             
-        entry = {
-            "version": version,
-            "created_at": timestamp,
-            "status": "production" if is_production else "archived",
-            "model_path": str(model_path),
-            "calibrator_path": str(calibrator_path),
-            "features_path": str(features_path),
-            "metadata": metadata
+    def register_model(self, model_id: str, algo_name: str, metrics: dict, shap_importance: dict, hyperparams: dict, dataset_version: str):
+        self.registry["models"][model_id] = {
+            "model_id": model_id,
+            "algorithm": algo_name,
+            "training_date": datetime.now().isoformat(),
+            "dataset_version": dataset_version,
+            "hyperparameters": hyperparams,
+            "metrics": metrics,
+            "feature_importance": shap_importance,
+            "status": "Research",
+            "composite_score": self._compute_composite_score(metrics)
         }
-        
-        # Demote previous production model
-        if is_production:
-            for m in self.registry["models"]:
-                if m["status"] == "production":
-                    m["status"] = "archived"
-                    
-        self.registry["models"].append(entry)
         self._save_registry()
         
-        logger.info(f"Successfully registered model {version} as Production.")
-        return version
-
-    def get_production_model(self):
-        """Loads the current production model, calibrator, and features."""
-        for m in self.registry["models"]:
-            if m["status"] == "production":
-                import lightgbm as lgb
-                model = lgb.Booster(model_file=m["model_path"])
-                calibrator = joblib.load(m["calibrator_path"])
-                with open(m["features_path"], 'r') as f:
-                    features = json.load(f)
-                return model, calibrator, features, m
-        return None, None, None, None
+    def _compute_composite_score(self, metrics: dict) -> float:
+        # Weighted Institutional Score
+        # 40% Predictive Accuracy (ROC_AUC)
+        # 40% Investment Performance (Sharpe_Ratio / 3 as a pseudo normalization)
+        # 20% Robustness (1 - Max_Drawdown)
+        
+        auc = metrics.get('ROC_AUC', 0.5)
+        sharpe = metrics.get('Sharpe_Ratio', 0.0)
+        drawdown = metrics.get('Max_Drawdown', 1.0)
+        
+        # Normalize Sharpe loosely (assuming max around 3 for this timeframe)
+        norm_sharpe = min(max(sharpe / 3.0, 0.0), 1.0)
+        
+        score = (auc * 0.4) + (norm_sharpe * 0.4) + ((1.0 - drawdown) * 0.2)
+        return round(score * 100, 2)
+        
+    def promote_champion(self, model_id: str):
+        if model_id not in self.registry["models"]:
+            raise ValueError(f"Model {model_id} not found in registry.")
+            
+        old_champion = self.registry["champion_id"]
+        if old_champion and old_champion in self.registry["models"]:
+            self.registry["models"][old_champion]["status"] = "Challenger"
+            
+        self.registry["models"][model_id]["status"] = "Champion"
+        self.registry["champion_id"] = model_id
+        
+        # Demote others to Research or Challenger based on score
+        for m_id, meta in self.registry["models"].items():
+            if m_id != model_id:
+                if meta["composite_score"] > 60:
+                    meta["status"] = "Challenger"
+                else:
+                    meta["status"] = "Research"
+                    
+        self._save_registry()
+        
+    def get_champion(self) -> dict:
+        champ_id = self.registry["champion_id"]
+        if champ_id:
+            return self.registry["models"].get(champ_id)
+        return None
+        
+    def get_all_models(self) -> dict:
+        return self.registry["models"]

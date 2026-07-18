@@ -127,6 +127,32 @@ app.include_router(optimizer_router, prefix="/optimizer", tags=["Portfolio Optim
 from app.api.event_routes import router as event_router
 app.include_router(event_router, prefix="/events", tags=["Event Intelligence"])
 
+from app.api.recommendation_routes import router as recommendation_router
+from app.api.model_arena_routes import router as model_arena_router
+from app.api.paper_trading_routes import router as paper_trading_router
+from app.api.feature_routes import router as feature_router
+from app.api.dataset_routes import router as dataset_router
+
+from app.api.portfolio_intelligence_routes import router as portfolio_intelligence_router
+from app.api.executive_routes import router as executive_router
+
+# Feature Platform routes
+app.include_router(feature_router, prefix="/api/features", tags=["Features"])
+app.include_router(dataset_router, prefix="/api/datasets", tags=["Datasets"])
+
+# Model Arena routes
+app.include_router(model_arena_router, prefix="/api/model_arena", tags=["Model Arena"])
+
+# Paper Trading & Continuous Learning routes
+app.include_router(paper_trading_router, prefix="/api/paper_trading", tags=["Paper Trading"])
+
+# Portfolio Intelligence routes
+app.include_router(portfolio_intelligence_router, prefix="/api/intelligence", tags=["Portfolio Intelligence"])
+
+# Executive Intelligence routes
+app.include_router(executive_router, prefix="/api/executive", tags=["Executive Intelligence"])
+
+# Optimization & Portfolio routes
 from app.api.regime_routes import router as regime_router
 app.include_router(regime_router, prefix="/regime", tags=["Market Regime"])
 app.include_router(validation_router, prefix="/api/validation", tags=["Validation Engine"])

@@ -1,72 +1,122 @@
+from adaptive_learning.db import AdaptiveLearningDB
+from datetime import datetime
+import json
 import logging
-from typing import Dict, Any, List
 
 logger = logging.getLogger("VirtualPortfolio")
 
 class VirtualPortfolio:
-    def __init__(self, initial_capital: float = 1000000.0):
+    def __init__(self, initial_capital: float = 1000000.0, transaction_cost_pct: float = 0.001):
+        self.db = AdaptiveLearningDB()
         self.initial_capital = initial_capital
-        self.cash = initial_capital
-        self.open_positions: Dict[str, Dict[str, Any]] = {}
-        self.closed_positions: List[Dict[str, Any]] = []
+        self.transaction_cost_pct = transaction_cost_pct
+        self._ensure_initial_snapshot()
         
-    def get_portfolio_nav(self) -> float:
-        """Calculate Net Asset Value (Cash + Market Value of open positions)."""
-        market_value = sum(pos["shares"] * pos["current_price"] for pos in self.open_positions.values())
-        return self.cash + market_value
+    def _ensure_initial_snapshot(self):
+        with self.db.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT cash_balance FROM portfolio_history ORDER BY date ASC LIMIT 1")
+            res = cursor.fetchone()
+            if not res:
+                today = datetime.now().strftime("%Y-%m-%d")
+                cursor.execute('''
+                    INSERT INTO portfolio_history (date, cash_balance, unrealized_pnl, total_value)
+                    VALUES (?, ?, ?, ?)
+                ''', (today, self.initial_capital, 0.0, self.initial_capital))
+                conn.commit()
+
+    def record_manual_entry(self, symbol: str, quantity: float, entry_price: float, ai_confidence: float = None):
+        """
+        Records a human-approved trade entry.
+        """
+        cost = quantity * entry_price
+        fee = cost * self.transaction_cost_pct
+        total_deduction = cost + fee
         
-    def get_summary(self) -> Dict[str, Any]:
-        nav = self.get_portfolio_nav()
-        total_return = ((nav - self.initial_capital) / self.initial_capital) * 100
+        today = datetime.now().strftime("%Y-%m-%d")
         
-        return {
-            "initial_capital": self.initial_capital,
-            "cash": self.cash,
-            "nav": nav,
-            "total_return_pct": total_return,
-            "open_positions_count": len(self.open_positions),
-            "closed_positions_count": len(self.closed_positions)
-        }
-        
-    def add_position(self, symbol: str, entry_price: float, shares: float, context: Dict[str, Any]):
-        cost = entry_price * shares
-        if cost > self.cash:
-            logger.warning(f"Insufficient cash to buy {shares} of {symbol}. Cash: {self.cash}, Required: {cost}")
-            # In a real engine, we'd partially fill or reject. Here we just reject.
-            return False
+        with self.db.get_connection() as conn:
+            cursor = conn.cursor()
             
-        self.cash -= cost
-        self.open_positions[symbol] = {
-            "symbol": symbol,
-            "entry_price": entry_price,
-            "current_price": entry_price,
-            "shares": shares,
-            "context": context,
-            "status": "ACTIVE",
-            "days_held": 0
-        }
-        return True
-        
-    def close_position(self, symbol: str, exit_price: float, reason: str):
-        if symbol not in self.open_positions:
-            return False
+            # Check cash
+            cursor.execute("SELECT cash_balance FROM portfolio_history ORDER BY date DESC LIMIT 1")
+            current_cash = cursor.fetchone()[0]
             
-        pos = self.open_positions.pop(symbol)
-        revenue = pos["shares"] * exit_price
-        self.cash += revenue
+            if current_cash < total_deduction:
+                logger.warning(f"Insufficient cash for {symbol}. Needed: {total_deduction}, Available: {current_cash}")
+                # We still allow it for paper trading, but log a warning.
+            
+            # Insert Position
+            cursor.execute('''
+                INSERT INTO positions (symbol, entry_date, entry_price, quantity, ai_confidence, status)
+                VALUES (?, ?, ?, ?, ?, 'OPEN')
+            ''', (symbol, today, entry_price, quantity, ai_confidence))
+            
+            # Update Cash Snapshot
+            new_cash = current_cash - total_deduction
+            cursor.execute('''
+                INSERT OR REPLACE INTO portfolio_history (date, cash_balance, unrealized_pnl, total_value)
+                VALUES (?, ?, ?, (SELECT total_value FROM portfolio_history ORDER BY date DESC LIMIT 1))
+            ''', (today, new_cash, 0.0)) # PnL will be updated via MTM
+            
+            conn.commit()
+            
+    def record_manual_exit(self, position_id: int, exit_price: float, exit_reason: str):
+        """
+        Records a human-initiated exit for an open position.
+        """
+        today = datetime.now().strftime("%Y-%m-%d")
         
-        pnl = revenue - (pos["shares"] * pos["entry_price"])
-        pos["exit_price"] = exit_price
-        pos["exit_reason"] = reason
-        pos["pnl"] = pnl
-        pos["return_pct"] = (exit_price - pos["entry_price"]) / pos["entry_price"]
-        pos["status"] = "CLOSED"
-        
-        self.closed_positions.append(pos)
-        return True
-        
-    def update_market_prices(self, price_map: Dict[str, float]):
-        for symbol, pos in self.open_positions.items():
-            if symbol in price_map:
-                pos["current_price"] = price_map[symbol]
-                pos["days_held"] += 1
+        with self.db.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT quantity, entry_price, symbol FROM positions WHERE id = ? AND status = 'OPEN'", (position_id,))
+            res = cursor.fetchone()
+            
+            if not res:
+                raise ValueError("Open position not found.")
+                
+            quantity, entry_price, symbol = res
+            
+            proceeds = quantity * exit_price
+            fee = proceeds * self.transaction_cost_pct
+            net_proceeds = proceeds - fee
+            
+            # Update Position
+            cursor.execute('''
+                UPDATE positions
+                SET status = 'CLOSED', exit_date = ?, exit_price = ?, exit_reason = ?
+                WHERE id = ?
+            ''', (today, exit_price, exit_reason, position_id))
+            
+            # Update Cash
+            cursor.execute("SELECT cash_balance FROM portfolio_history ORDER BY date DESC LIMIT 1")
+            current_cash = cursor.fetchone()[0]
+            new_cash = current_cash + net_proceeds
+            
+            cursor.execute('''
+                INSERT OR REPLACE INTO portfolio_history (date, cash_balance, unrealized_pnl, total_value)
+                VALUES (?, ?, ?, (SELECT total_value FROM portfolio_history ORDER BY date DESC LIMIT 1))
+            ''', (today, new_cash, 0.0))
+            
+            conn.commit()
+            
+    def get_portfolio_summary(self):
+        with self.db.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM portfolio_history ORDER BY date DESC LIMIT 1")
+            hist = cursor.fetchone()
+            
+            cursor.execute("SELECT * FROM positions WHERE status = 'OPEN'")
+            columns = [desc[0] for desc in cursor.description]
+            positions = [dict(zip(columns, row)) for row in cursor.fetchall()]
+            
+            if not hist:
+                return {}
+                
+            return {
+                "date": hist[0],
+                "cash_balance": hist[1],
+                "unrealized_pnl": hist[2],
+                "total_value": hist[3],
+                "open_positions": positions
+            }

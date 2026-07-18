@@ -1,66 +1,80 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from pydantic import BaseModel
-from typing import List, Dict, Any
-import random
-import time
+from adaptive_learning.recommendations.recommendation_engine import RecommendationEngine
+from paper_trading.portfolio.virtual_portfolio import VirtualPortfolio
+from adaptive_learning.engine.journal import InvestmentJournal
+from paper_trading.monitoring.position_monitor import PositionMonitor
+from adaptive_learning.drift.model_drift_detector import ModelDriftDetector
+from adaptive_learning.analytics.ai_vs_human import AIVsHumanAnalytics
 
-from paper_trading.engine.paper_trading_engine import PaperTradingEngine
-from paper_trading.attribution.attribution_engine import AttributionEngine
+router = APIRouter()
 
-router = APIRouter(tags=["paper_trading"])
+class ManualTrade(BaseModel):
+    symbol: str
+    quantity: float
+    entry_price: float
+    ai_confidence: float = None
+    recommendation_id: int = None
 
-# Global instance for simulation state persistence across API calls
-attribution_engine = AttributionEngine()
-engine = PaperTradingEngine(attribution_engine=attribution_engine)
+class ManualExit(BaseModel):
+    position_id: int
+    exit_price: float
+    exit_reason: str
+    
+class JournalDecision(BaseModel):
+    recommendation_id: int
+    decision: str
 
-@router.post("/simulate")
-def run_simulation():
-    """
-    Runs a mock simulation: 
-    1. Injects committee recommendations
-    2. Ticks the market a few times
-    3. Triggers exits
-    4. Returns the final portfolio state and journal.
-    """
-    try:
-        # Reset engine for clean simulation
-        global engine, attribution_engine
-        attribution_engine = AttributionEngine()
-        engine = PaperTradingEngine(attribution_engine=attribution_engine)
+@router.get("/recommendations")
+def get_daily_recommendations():
+    engine = RecommendationEngine()
+    recs = engine.generate_daily_recommendations(top_k=5)
+    return {"recommendations": recs}
+
+@router.post("/trade/entry")
+def record_manual_entry(trade: ManualTrade):
+    portfolio = VirtualPortfolio()
+    portfolio.record_manual_entry(trade.symbol, trade.quantity, trade.entry_price, trade.ai_confidence)
+    
+    if trade.recommendation_id:
+        journal = InvestmentJournal()
+        journal.update_human_decision(trade.recommendation_id, "APPROVED")
         
-        # 1. Inject Committee BUY recommendations
-        mock_recs = [
-            {
-                "symbol": "TCS.NS",
-                "final_decision": "BUY",
-                "context_snapshot": {
-                    "execution": {"entry_price": 4000.0, "capital_allocated": 100000.0, "stop_loss": 3800.0, "target_1": 4400.0, "holding_period": 10},
-                    "prediction": {"confidence": 92}
-                }
-            },
-            {
-                "symbol": "HDFCBANK.NS",
-                "final_decision": "BUY",
-                "context_snapshot": {
-                    "execution": {"entry_price": 1600.0, "capital_allocated": 100000.0, "stop_loss": 1550.0, "target_1": 1700.0, "holding_period": 5},
-                    "prediction": {"confidence": 75}
-                }
-            }
-        ]
-        
-        for rec in mock_recs:
-            engine.execute_committee_recommendation(rec)
-            
-        # 2. Tick 1 (Prices move up slightly)
-        engine.process_market_tick({"TCS.NS": 4100.0, "HDFCBANK.NS": 1620.0})
-        
-        # 3. Tick 2 (HDFCBANK hits stop loss, TCS hits target)
-        engine.process_market_tick({"TCS.NS": 4450.0, "HDFCBANK.NS": 1540.0})
-        
-        return {
-            "portfolio_summary": engine.portfolio.get_summary(),
-            "open_positions": engine.portfolio.open_positions,
-            "closed_trades": engine.portfolio.closed_positions
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    return {"status": "Trade recorded successfully"}
+
+@router.post("/trade/exit")
+def record_manual_exit(trade: ManualExit):
+    portfolio = VirtualPortfolio()
+    portfolio.record_manual_exit(trade.position_id, trade.exit_price, trade.exit_reason)
+    return {"status": "Exit recorded successfully"}
+
+@router.get("/portfolio")
+def get_portfolio_summary():
+    portfolio = VirtualPortfolio()
+    monitor = PositionMonitor()
+    
+    # Force a live MTM update before returning
+    monitor.run_daily_mtm()
+    
+    return {"portfolio": portfolio.get_portfolio_summary()}
+
+@router.get("/journal")
+def get_journal():
+    journal = InvestmentJournal()
+    return {"journal": journal.get_recent_entries()}
+
+@router.post("/journal/decision")
+def update_journal_decision(req: JournalDecision):
+    journal = InvestmentJournal()
+    journal.update_human_decision(req.recommendation_id, req.decision)
+    return {"status": "Updated decision"}
+
+@router.get("/analytics/ai_vs_human")
+def get_ai_vs_human_analytics():
+    analytics = AIVsHumanAnalytics()
+    return analytics.get_analytics()
+
+@router.get("/analytics/drift")
+def get_model_drift():
+    detector = ModelDriftDetector()
+    return {"drift": detector.check_drift()}

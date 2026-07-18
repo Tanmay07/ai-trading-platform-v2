@@ -1,47 +1,60 @@
-from typing import Dict, Any, List
+import pandas as pd
+from datetime import datetime
+from adaptive_learning.db import AdaptiveLearningDB
+from paper_trading.portfolio.virtual_portfolio import VirtualPortfolio
+import logging
+
+import os
+
+logger = logging.getLogger("PositionMonitor")
 
 class PositionMonitor:
-    def check_exits(self, open_positions: Dict[str, Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def __init__(self, dataset_path: str = None):
+        if dataset_path is None:
+            dataset_path = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'dataset_v5.parquet')
+        self.db = AdaptiveLearningDB()
+        self.dataset_path = dataset_path
+        self.portfolio = VirtualPortfolio()
+        
+    def run_daily_mtm(self):
         """
-        Evaluates all open positions against their stops and targets.
-        Returns a list of exit signals.
+        Runs daily Mark-To-Market for the virtual portfolio.
+        Reads the latest price for open positions from the dataset.
         """
-        exits = []
-        for symbol, pos in open_positions.items():
-            current_price = pos["current_price"]
-            context = pos.get("context", {})
-            execution = context.get("execution", {})
+        df = pd.read_parquet(self.dataset_path)
+        if 'Date' in df.index.names:
+            df = df.reset_index()
+        latest_date = df['Date'].max()
+        latest_data = df[df['Date'] == latest_date].set_index('Symbol')
+        
+        with self.db.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT id, symbol, quantity, entry_price FROM positions WHERE status = 'OPEN'")
+            open_positions = cursor.fetchall()
             
-            stop_loss = execution.get("stop_loss", 0.0)
-            target_1 = execution.get("target_1", 0.0)
-            target_2 = execution.get("target_2", 0.0)
-            holding_period = execution.get("holding_period", 10)
+            total_unrealized_pnl = 0.0
             
-            if current_price <= stop_loss:
-                exits.append({
-                    "symbol": symbol,
-                    "exit_price": current_price,
-                    "reason": "STOP_LOSS"
-                })
-            elif target_2 > 0 and current_price >= target_2:
-                exits.append({
-                    "symbol": symbol,
-                    "exit_price": current_price,
-                    "reason": "TARGET_2_REACHED"
-                })
-            elif target_1 > 0 and current_price >= target_1 and pos.get("partial_taken") is not True:
-                # In a real system we'd exit half. For simplicity of MVP, we just exit all if it hits target 1 if we don't support partials fully in the portfolio yet.
-                # Or mark partial_taken = True
-                exits.append({
-                    "symbol": symbol,
-                    "exit_price": current_price,
-                    "reason": "TARGET_1_REACHED"
-                })
-            elif pos["days_held"] >= holding_period:
-                exits.append({
-                    "symbol": symbol,
-                    "exit_price": current_price,
-                    "reason": "TIME_EXIT"
-                })
-                
-        return exits
+            for pos in open_positions:
+                pos_id, sym, qty, entry_price = pos
+                if sym in latest_data.index:
+                    current_price = latest_data.loc[sym, 'Close']
+                    unrealized = (current_price - entry_price) * qty
+                    total_unrealized_pnl += unrealized
+                else:
+                    logger.warning(f"Could not find latest price for {sym}")
+                    
+            # Update Cash Snapshot
+            cursor.execute("SELECT cash_balance FROM portfolio_history ORDER BY date DESC LIMIT 1")
+            res = cursor.fetchone()
+            current_cash = res[0] if res else self.portfolio.initial_capital
+            
+            total_value = current_cash + total_unrealized_pnl + sum(qty * entry_price for _, _, qty, entry_price in open_positions)
+            
+            today = datetime.now().strftime("%Y-%m-%d")
+            cursor.execute('''
+                INSERT OR REPLACE INTO portfolio_history (date, cash_balance, unrealized_pnl, total_value)
+                VALUES (?, ?, ?, ?)
+            ''', (today, current_cash, total_unrealized_pnl, total_value))
+            
+            conn.commit()
+        logger.info(f"Daily MTM complete. Total Value: {total_value}, Unrealized PnL: {total_unrealized_pnl}")
