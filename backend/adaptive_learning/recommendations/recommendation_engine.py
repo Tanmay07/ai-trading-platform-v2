@@ -17,7 +17,7 @@ logger = logging.getLogger("RecommendationEngine")
 class RecommendationEngine:
     def __init__(self, dataset_path: str = None):
         if dataset_path is None:
-            dataset_path = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'dataset_v5.parquet')
+            dataset_path = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'ml_datasets', 'dataset_v5.parquet')
         self.dataset_path = dataset_path
         self.registry = ModelRegistry()
         self.db = AdaptiveLearningDB()
@@ -98,10 +98,18 @@ class RecommendationEngine:
         latest_date = df['Date'].max()
         today_data = df[df['Date'] == latest_date].copy()
         
-        exclude = ['Date', 'Symbol', 'Target_Forward_Return', 'Target_Class', 'Open', 'High', 'Low', 'Close', 'Volume']
-        features = [c for c in today_data.columns if c not in exclude]
+        # Rename columns to replace spaces with underscores to match LightGBM expected feature names
+        today_data.columns = [c.replace(' ', '_') for c in today_data.columns]
         
-        X = today_data[features]
+        expected_features = self.model.model.feature_name()
+        features = [f for f in expected_features if f in today_data.columns]
+        
+        # Fill any missing expected features with 0
+        for f in expected_features:
+            if f not in today_data.columns:
+                today_data[f] = 0.0
+                
+        X = today_data[expected_features]
         symbols = today_data['Symbol'].values
         
         # Predict Proba

@@ -21,9 +21,9 @@ const LiveTradingDesk = () => {
   const fetchTradingData = async () => {
     try {
       const [portfolioRes, ordersRes, brokerRes] = await Promise.all([
-        api.get('/trading/portfolio'),
-        api.get('/trading/orders'),
-        api.get('/trading/broker/status')
+        api.get('/api/trading/portfolio'),
+        api.get('/api/trading/orders'),
+        api.get('/api/trading/broker/status')
       ]);
       setPortfolio(portfolioRes.data);
       setOrders(ordersRes.data);
@@ -39,7 +39,7 @@ const LiveTradingDesk = () => {
 
   const approveOrder = async (orderId) => {
     try {
-      await api.post('/trading/execute/approve', { order_id: orderId });
+      await api.post('/api/trading/execute/approve', { order_id: orderId });
       fetchTradingData();
     } catch (err) {
       alert("Failed to execute order.");
@@ -48,7 +48,7 @@ const LiveTradingDesk = () => {
 
   const executeMockSignal = async () => {
     try {
-      await api.post('/trading/execute/signal', {
+      await api.post('/api/trading/execute/signal', {
         symbol: "RELIANCE",
         action: "BUY",
         confidence: 0.92,

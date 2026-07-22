@@ -131,7 +131,7 @@
                 "Momentum_Factor": 0.0,
                 "Institutional_Activity_Factor": 0.0
             },
-            "status": "Challenger",
+            "status": "Revoked",
             "composite_score": 100.0
         },
         "XGB_V1": {
@@ -264,7 +264,7 @@
                 "Risk_Factor": 0.0,
                 "Institutional_Activity_Factor": 0.0
             },
-            "status": "Champion",
+            "status": "Revoked",
             "composite_score": 100.0
         },
         "CAT_V1": {
@@ -395,7 +395,7 @@
                 "Momentum_Factor": 0.0,
                 "Institutional_Activity_Factor": 0.0
             },
-            "status": "Challenger",
+            "status": "Revoked",
             "composite_score": 100.0
         },
         "LGBM_V2": {
@@ -520,7 +520,7 @@
                 "Risk_Factor": 0.0,
                 "Institutional_Activity_Factor": 0.0
             },
-            "status": "Challenger",
+            "status": "Revoked",
             "composite_score": 69.49
         },
         "XGB_V2": {
@@ -644,7 +644,7 @@
                 "Risk_Factor": 0.0,
                 "Institutional_Activity_Factor": 0.0
             },
-            "status": "Challenger",
+            "status": "Revoked",
             "composite_score": 69.93
         },
         "CAT_V2": {
@@ -766,7 +766,7 @@
                 "Risk_Factor": 0.0,
                 "Institutional_Activity_Factor": 0.0
             },
-            "status": "Challenger",
+            "status": "Revoked",
             "composite_score": 67.48
         },
         "LR_Baseline": {
@@ -804,7 +804,7 @@
                 "Composite_Score": 70.41971023252506
             },
             "feature_importance": {},
-            "status": "Research",
+            "status": "Revoked",
             "composite_score": 57.25
         },
         "DT_Baseline": {
@@ -842,7 +842,7 @@
                 "Composite_Score": 73.94371947145493
             },
             "feature_importance": {},
-            "status": "Challenger",
+            "status": "Revoked",
             "composite_score": 68.5
         },
         "RF_Baseline": {
@@ -881,7 +881,7 @@
                 "Composite_Score": 75.14801384615797
             },
             "feature_importance": {},
-            "status": "Challenger",
+            "status": "Revoked",
             "composite_score": 67.23
         },
         "LGBM_V3": {
@@ -980,7 +980,7 @@
                 "Risk_Factor": 0.0,
                 "Institutional_Activity_Factor": 0.0
             },
-            "status": "Challenger",
+            "status": "Champion",
             "composite_score": 68.13
         },
         "XGB_V3": {
@@ -1182,5 +1182,5 @@
             "composite_score": 67.88
         }
     },
-    "champion_id": "XGB_V1"
+    "champion_id": "LGBM_V3"
 }
