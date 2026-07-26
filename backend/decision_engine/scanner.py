@@ -3,9 +3,10 @@ from typing import List
 from sqlalchemy.orm import Session
 from datetime import datetime
 
-from decision_engine.engine import InvestmentDecisionEngine
 from decision_engine.models import DecisionCategory
 from decision_engine.database import OpportunityRecord
+from policy_engine.engine import DecisionPolicyEngine
+from policy_engine.models import PolicyVersion
 
 logger = logging.getLogger(__name__)
 
@@ -31,8 +32,9 @@ class MarketUniverseProvider:
         return universe
 
 class OpportunityScanner:
-    def __init__(self, engine: InvestmentDecisionEngine):
+    def __init__(self, engine: DecisionPolicyEngine, policy_version: PolicyVersion):
         self.engine = engine
+        self.policy_version = policy_version
         self.universe_provider = MarketUniverseProvider()
 
     def run_background_scan(self, db: Session, portfolio_id: int, user_id: str):
@@ -51,7 +53,7 @@ class OpportunityScanner:
             try:
                 # In production, current_price is pulled via MarketDataService
                 current_price = 1000.0 
-                rec = self.engine.analyze_holding(symbol, portfolio_id, user_id, current_price)
+                rec = self.engine.execute_policy(symbol, portfolio_id, user_id, current_price, self.policy_version)
                 
                 if rec.decision in [DecisionCategory.STRONG_BUY, DecisionCategory.BUY_MORE]:
                     # Upsert or Insert

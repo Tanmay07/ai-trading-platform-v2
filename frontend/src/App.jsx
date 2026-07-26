@@ -13,6 +13,7 @@ import PortfolioWorkspace from './pages/workspaces/PortfolioWorkspace';
 import PaperTradingWorkspace from './pages/workspaces/PaperTradingWorkspace';
 import AICopilotWorkspace from './pages/workspaces/AICopilotWorkspace';
 import PlatformWorkspace from './pages/workspaces/PlatformWorkspace';
+import PolicyAdminWorkspace from './pages/workspaces/PolicyAdminWorkspace';
 import AIStudioWorkspace from './pages/workspaces/AIStudioWorkspace';
 import DataStudioWorkspace from './pages/workspaces/DataStudioWorkspace';
 import GovernanceWorkspace from './pages/workspaces/GovernanceWorkspace';
@@ -54,6 +55,11 @@ function App() {
           <Route path="ai-studio/*" element={
             <ProtectedAdminRoute>
               <AIStudioWorkspace />
+            </ProtectedAdminRoute>
+          } />
+          <Route path="policy-admin/*" element={
+            <ProtectedAdminRoute>
+              <PolicyAdminWorkspace />
             </ProtectedAdminRoute>
           } />
           <Route path="data-studio/*" element={

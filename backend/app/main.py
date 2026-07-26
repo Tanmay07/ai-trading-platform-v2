@@ -105,6 +105,9 @@ app.include_router(portfolio_v2_router, prefix="/api/v2/portfolio", tags=["Portf
 from app.api.decision_v2_routes import router as decision_v2_router
 app.include_router(decision_v2_router, prefix="/api/v2/decision", tags=["Investment Decision Engine"])
 
+from app.api.policy_routes import router as policy_router
+app.include_router(policy_router, prefix="/api/policies", tags=["Decision Policy Engine"])
+
 app.include_router(ai_portfolio_router, prefix="/api/ai-portfolio", tags=["AI Portfolio Manager"])
 app.include_router(model_router, prefix="/api/model", tags=["Model Intelligence"])
 app.include_router(paper_trading_router, prefix="/paper-trading", tags=["Paper Trading"])
