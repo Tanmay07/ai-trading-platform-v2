@@ -36,12 +36,50 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Start the suggestion job background task (once every 2 hours)
     # suggestion_task = asyncio.create_task(scheduled_suggestion_scan(interval_minutes=120))
 
+    # Start Event Bus
+    from event_engine.bus import event_bus
+    from event_engine.handlers.decision_handler import DecisionEventHandler
+    from event_engine.handlers.alerts import SmartAlertsHandler
+    from decision_engine.database import SessionLocal as DecisionSessionLocal
+    from policy_engine.database import SessionLocal as PolicySessionLocal
+    from policy_engine.engine import DecisionPolicyEngine
+    from portfolio_manager.portfolio_service import PortfolioService
+    from portfolio_manager.database import SessionLocal as PortfolioSessionLocal
+    from market_data.service import MarketDataService
+    from market_data.providers.jugaad_provider import JugaadProvider
+    
+    event_bus.start()
+    
+    # We will initialize the handlers and subscribe them here.
+    # Note: In a real app we'd manage sessions more cleanly (e.g., passing session makers).
+    # For this mock, we just want to prove the EDA wiring.
+    try:
+        policy_db = PolicySessionLocal()
+        # Fallback policy for the mock handler
+        from policy_engine.models import PolicyVersion
+        default_policy = PolicyVersion(
+            weights={"technical": 30, "valuation": 30, "context": 20, "risk": 20},
+            thresholds={"strong_buy": 90}, target_logic={}, stop_loss_logic={}
+        )
+        mds = MarketDataService(JugaadProvider())
+        portfolio_service = PortfolioService(PortfolioSessionLocal(), mds)
+        decision_engine = DecisionPolicyEngine(portfolio_service, mds, policy_db)
+        
+        decision_handler = DecisionEventHandler(decision_engine, default_policy)
+        alert_handler = SmartAlertsHandler(DecisionSessionLocal())
+        
+        event_bus.subscribe('*', decision_handler.handle_event)
+        event_bus.subscribe('*', alert_handler.handle_event)
+    except Exception as e:
+        logger.error(f"Failed to register Event Handlers: {e}")
+    
     logger.info("✅ Application started successfully")
 
     yield  # ← application runs here
 
     # ── Shutdown ──────────────────────────────────────────────
     logger.info("🛑 Shutting down %s …", settings.APP_NAME)
+    await event_bus.stop()
     # discovery_task.cancel()
     # suggestion_task.cancel()
     try:
@@ -107,6 +145,9 @@ app.include_router(decision_v2_router, prefix="/api/v2/decision", tags=["Investm
 
 from app.api.policy_routes import router as policy_router
 app.include_router(policy_router, prefix="/api/policies", tags=["Decision Policy Engine"])
+
+from app.api.event_routes import router as event_router
+app.include_router(event_router, prefix="/api/events", tags=["Market Intelligence Event Engine"])
 
 app.include_router(ai_portfolio_router, prefix="/api/ai-portfolio", tags=["AI Portfolio Manager"])
 app.include_router(model_router, prefix="/api/model", tags=["Model Intelligence"])
