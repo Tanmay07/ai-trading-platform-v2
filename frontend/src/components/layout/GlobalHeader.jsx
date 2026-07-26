@@ -8,7 +8,7 @@ const GlobalHeader = () => {
   const { toggleCommandPalette } = useUIStore();
 
   return (
-    <header className="h-16 bg-bg-surface/80 backdrop-blur-md border-b border-glass-border flex items-center justify-between px-6 sticky top-0 z-40">
+    <header className="h-16 bg-bg-surface-elevated/40 backdrop-blur-2xl border-b border-glass-border flex items-center justify-between px-6 sticky top-0 z-40">
       <div className="flex-1 flex items-center">
         {/* Universal Search Trigger */}
         <button 

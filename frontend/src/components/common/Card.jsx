@@ -2,7 +2,7 @@ import React from 'react';
 
 export const Card = ({ children, className = '', noPadding = false }) => {
   return (
-    <div className={`bg-dark-800/80 backdrop-blur-xl border border-dark-700/50 rounded-2xl ${noPadding ? '' : 'p-6'} ${className}`}>
+    <div className={`glass-panel ${noPadding ? '' : 'p-6'} ${className}`}>
       {children}
     </div>
   );

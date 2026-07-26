@@ -8,7 +8,7 @@ const ContextPanel = () => {
   if (!isContextPanelOpen) return null;
 
   return (
-    <div className="w-80 border-l border-glass-border bg-bg-surface-elevated/50 backdrop-blur-xl shrink-0 hidden lg:flex flex-col h-full animate-fade-in">
+    <div className="w-80 border-l border-glass-border bg-bg-surface-elevated/40 backdrop-blur-2xl shrink-0 hidden lg:flex flex-col h-full animate-fade-in relative z-10">
       <div className="h-16 border-b border-glass-border flex items-center justify-between px-4">
         <div className="flex items-center gap-2 text-primary-400">
           <Sparkles className="w-4 h-4" />

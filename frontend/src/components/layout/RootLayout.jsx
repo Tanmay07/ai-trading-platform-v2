@@ -7,7 +7,11 @@ import { Outlet } from 'react-router-dom';
 
 const RootLayout = () => {
   return (
-    <div className="flex h-screen overflow-hidden bg-bg-base text-text-primary">
+    <div className="flex h-screen overflow-hidden bg-[#050505] text-text-primary relative selection:bg-primary-500/30 selection:text-white">
+      {/* Background Ambient Glows */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-indigo-500/10 blur-[120px] pointer-events-none mix-blend-screen"></div>
+      <div className="absolute bottom-[-10%] right-[-5%] w-[30%] h-[40%] rounded-full bg-cyan-500/10 blur-[120px] pointer-events-none mix-blend-screen"></div>
+      
       {/* 1. Left Sidebar */}
       <GlobalSidebar />
 

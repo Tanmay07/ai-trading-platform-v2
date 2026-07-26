@@ -91,10 +91,21 @@ from app.api.reinforcement_routes import router as reinforcement_router # noqa: 
 from app.api.backtest_routes import router as backtest_router    # noqa: E402
 from app.api.ws_routes import router as ws_router                # noqa: E402
 from app.api.suggestion_routes import router as suggestion_router # noqa: E402
+from app.api.portfolio_routes import router as portfolio_router  # noqa: E402
+from app.api.ai_portfolio_routes import router as ai_portfolio_router
+
 from app.api.paper_trading_routes import router as paper_trading_router # noqa: E402
 from app.api.trade_outcomes_routes import router as trade_outcomes_router
 from app.api.validation_routes import router as validation_router
 from app.api.model_routes import router as model_router
+
+from app.api.portfolio_v2_routes import router as portfolio_v2_router
+app.include_router(portfolio_v2_router, prefix="/api/v2/portfolio", tags=["Portfolio V2"])
+
+from app.api.decision_v2_routes import router as decision_v2_router
+app.include_router(decision_v2_router, prefix="/api/v2/decision", tags=["Investment Decision Engine"])
+
+app.include_router(ai_portfolio_router, prefix="/api/ai-portfolio", tags=["AI Portfolio Manager"])
 app.include_router(model_router, prefix="/api/model", tags=["Model Intelligence"])
 app.include_router(paper_trading_router, prefix="/paper-trading", tags=["Paper Trading"])
 app.include_router(prediction_router, prefix="/predictions", tags=["Predictions"])

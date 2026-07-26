@@ -8,7 +8,7 @@ import RootLayout from './components/layout/RootLayout';
 import DashboardWorkspace from './pages/workspaces/DashboardWorkspace';
 import MarketsWorkspace from './pages/workspaces/MarketsWorkspace';
 import ResearchWorkspace from './pages/workspaces/ResearchWorkspace';
-import CommitteeWorkspace from './pages/workspaces/CommitteeWorkspace';
+import PortfolioRecommendationWorkspace from './pages/workspaces/PortfolioRecommendationWorkspace';
 import PortfolioWorkspace from './pages/workspaces/PortfolioWorkspace';
 import PaperTradingWorkspace from './pages/workspaces/PaperTradingWorkspace';
 import AICopilotWorkspace from './pages/workspaces/AICopilotWorkspace';
@@ -40,7 +40,7 @@ function App() {
           <Route index element={<DashboardWorkspace />} />
           <Route path="markets/*" element={<MarketsWorkspace />} />
           <Route path="research/*" element={<ResearchWorkspace />} />
-          <Route path="committee/*" element={<CommitteeWorkspace />} />
+          <Route path="committee/*" element={<PortfolioRecommendationWorkspace />} />
           <Route path="portfolio/*" element={<PortfolioWorkspace />} />
           <Route path="paper-trading/*" element={<PaperTradingWorkspace />} />
           <Route path="copilot/*" element={<AICopilotWorkspace />} />

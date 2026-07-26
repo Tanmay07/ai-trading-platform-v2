@@ -92,3 +92,48 @@ class ModelRegistry:
         if model_id in self.registry["models"]:
             self.registry["models"][model_id]["status"] = "Revoked"
         self._save_registry()
+
+    def get_production_model(self):
+        """
+        Loads the active production model from data/models/registry.json.
+        Returns: (model, calibrator, feature_names, metadata)
+        """
+        import joblib
+        import lightgbm as lgb
+        from pathlib import Path
+        
+        # Resolve backend root path
+        backend_dir = Path(__file__).parent.parent.parent
+        models_registry_path = backend_dir / "data" / "models" / "registry.json"
+        
+        if not models_registry_path.exists():
+            return None, None, None, None
+            
+        with open(models_registry_path, 'r') as f:
+            registry_data = json.load(f)
+            
+        prod_model_info = None
+        for m in registry_data.get("models", []):
+            if m.get("status") == "production":
+                prod_model_info = m
+                break
+                
+        if not prod_model_info:
+            return None, None, None, None
+            
+        model_path = backend_dir / prod_model_info.get("model_path")
+        calibrator_path = backend_dir / prod_model_info.get("calibrator_path")
+        features_path = backend_dir / prod_model_info.get("features_path")
+        metadata = prod_model_info.get("metadata", {})
+        metadata["version"] = prod_model_info.get("version", "unknown")
+        
+        if not model_path.exists() or not calibrator_path.exists() or not features_path.exists():
+            return None, None, None, None
+            
+        model = lgb.Booster(model_file=str(model_path))
+        calibrator = joblib.load(str(calibrator_path))
+        with open(features_path, 'r') as f:
+            feature_names = json.load(f)
+            
+        return model, calibrator, feature_names, metadata
+
