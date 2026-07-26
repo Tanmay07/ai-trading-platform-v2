@@ -149,6 +149,9 @@ app.include_router(policy_router, prefix="/api/policies", tags=["Decision Policy
 from app.api.event_routes import router as event_router
 app.include_router(event_router, prefix="/api/events", tags=["Market Intelligence Event Engine"])
 
+from app.api.aicio_routes import router as aicio_router
+app.include_router(aicio_router, prefix="/api/aicio", tags=["AI Chief Investment Officer"])
+
 app.include_router(ai_portfolio_router, prefix="/api/ai-portfolio", tags=["AI Portfolio Manager"])
 app.include_router(model_router, prefix="/api/model", tags=["Model Intelligence"])
 app.include_router(paper_trading_router, prefix="/paper-trading", tags=["Paper Trading"])
