@@ -2,7 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
 
-from policy_engine.database import get_db, Policy, PolicyVersion, DecisionAuditLog
+from policy_engine.database import get_db
+from policy_engine.models import Policy, PolicyVersion, DecisionAuditLog
 from policy_engine.schemas import PolicyCreate, PolicyResponse, PolicyVersionCreate, PolicyVersionResponse
 from app.infrastructure.auth.jwt_auth import get_current_user
 

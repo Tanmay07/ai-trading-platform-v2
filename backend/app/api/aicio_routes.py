@@ -5,7 +5,8 @@ from typing import Dict, Any
 from ai_cio.schemas import ChatRequest, ChatResponse, MorningBriefingResponse
 from ai_cio.orchestrator import AICIOService
 from ai_cio.reports.morning_brief import ReportGenerator
-from ai_cio.database import get_db, ConversationLog
+from ai_cio.database import get_db
+from ai_cio.models import ConversationLog
 from app.infrastructure.auth.jwt_auth import get_current_user
 from portfolio_manager.portfolio_service import PortfolioService
 from portfolio_manager.database import get_db as get_portfolio_db

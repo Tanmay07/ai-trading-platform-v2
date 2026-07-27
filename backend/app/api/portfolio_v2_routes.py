@@ -12,13 +12,15 @@ from portfolio_manager.portfolio_service import PortfolioService
 from app.infrastructure.auth.jwt_auth import get_current_user
 from market_data.service import MarketDataService
 from market_data.providers.jugaad_provider import JugaadProvider
+from market_data.providers.yahoo_provider import YahooProvider
 from portfolio_manager.importer import CSVImporter
 from portfolio_manager.exporter import CSVExporter
 
 router = APIRouter()
 
 def get_portfolio_service(db: Session = Depends(get_db)):
-    mds = MarketDataService(JugaadProvider())
+    providers = [JugaadProvider(), YahooProvider()]
+    mds = MarketDataService(providers=providers)
     return PortfolioService(db, mds)
 
 @router.post("/", response_model=PortfolioResponse)

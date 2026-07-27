@@ -2,7 +2,8 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from typing import List, Dict, Any
 
-from event_engine.database import get_db, MarketEventRecord
+from event_engine.database import get_db
+from event_engine.models import MarketEventRecord
 from event_engine.engine import EnterpriseMarketIntelligenceEngine
 from event_engine.detectors.technical import TechnicalEventDetector
 from event_engine.detectors.corporate import CorporateEventDetector

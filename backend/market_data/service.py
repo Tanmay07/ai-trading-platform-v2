@@ -17,28 +17,37 @@ class MarketDataService:
     Every other component must consume data through this gateway.
     """
     
-    def __init__(self, provider: Optional[MarketDataProvider] = None):
-        self.provider = provider or JugaadProvider()
+    def __init__(self, providers: Optional[List[MarketDataProvider]] = None):
+        if providers:
+            self.providers = providers
+        else:
+            self.providers = [JugaadProvider()]
+            
         self.cache = SmartCache()
         self.validator = DataValidator()
         
     def get_live_quote(self, symbol: str) -> MarketQuote:
-        """Fetches a live quote, utilizing cache and validation."""
+        """Fetches a live quote, utilizing cache, validation, and fallback providers."""
         cached = self.cache.get_quote(symbol)
         if cached:
             return cached
             
-        try:
-            quote = self.provider.get_live_quote(symbol)
-            validated_quote = self.validator.validate_quote(quote)
-            self.cache.set_quote(symbol, validated_quote)
-            return validated_quote
-        except Exception as e:
-            logger.error(f"Failed to fetch live quote for {symbol} via MarketDataService: {e}")
-            raise
+        last_error = None
+        for provider in self.providers:
+            try:
+                quote = provider.get_live_quote(symbol)
+                validated_quote = self.validator.validate_quote(quote)
+                self.cache.set_quote(symbol, validated_quote)
+                return validated_quote
+            except Exception as e:
+                logger.warning(f"Provider {provider.get_provider_name()} failed for {symbol}: {e}")
+                last_error = e
+                
+        logger.error(f"All providers failed to fetch live quote for {symbol}. Last error: {last_error}")
+        raise last_error or Exception(f"No providers available to fetch {symbol}")
 
     def get_live_quotes(self, symbols: List[str]) -> Dict[str, MarketQuote]:
-        """Fetches multiple quotes optimally."""
+        """Fetches multiple quotes optimally with fallback."""
         results = {}
         missing = []
         
@@ -50,15 +59,34 @@ class MarketDataService:
                 missing.append(sym)
                 
         if missing:
-            logger.info(f"Fetching batch quotes for {len(missing)} symbols from provider.")
-            provider_results = self.provider.get_live_quotes(missing)
-            for sym, quote in provider_results.items():
+            logger.info(f"Fetching batch quotes for {len(missing)} symbols.")
+            
+            for provider in self.providers:
+                if not missing:
+                    break
+                    
                 try:
-                    validated = self.validator.validate_quote(quote)
-                    self.cache.set_quote(sym, validated)
-                    results[sym] = validated
+                    provider_results = provider.get_live_quotes(missing)
+                    new_missing = []
+                    
+                    for sym in missing:
+                        if sym in provider_results:
+                            try:
+                                validated = self.validator.validate_quote(provider_results[sym])
+                                self.cache.set_quote(sym, validated)
+                                results[sym] = validated
+                            except Exception as e:
+                                logger.warning(f"Validation failed for batch quote {sym} via {provider.get_provider_name()}: {e}")
+                                new_missing.append(sym)
+                        else:
+                            new_missing.append(sym)
+                            
+                    missing = new_missing
                 except Exception as e:
-                    logger.warning(f"Validation failed for batch quote {sym}: {e}")
+                    logger.warning(f"Batch fetch failed via {provider.get_provider_name()}: {e}")
+                    
+            if missing:
+                logger.error(f"Failed to fetch quotes for symbols after trying all providers: {missing}")
                     
         return results
 

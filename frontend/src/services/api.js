@@ -8,6 +8,7 @@ const api = axios.create({
   baseURL: API_BASE,
   headers: {
     'Content-Type': 'application/json',
+    'Authorization': 'Bearer jwt_token_for_tenant_1_with_role_admin'
   },
 });
 

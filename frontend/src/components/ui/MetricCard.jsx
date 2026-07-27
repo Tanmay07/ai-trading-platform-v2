@@ -1,11 +1,11 @@
 import React from 'react';
 
-export default function MetricCard({ title, value, icon, subtitle, trend }) {
+export default function MetricCard({ title, value, icon: Icon, subtitle, trend }) {
   return (
     <div className="glass-panel p-5 flex flex-col gap-2 relative overflow-hidden group">
       <div className="flex justify-between items-center text-sm text-[var(--text-secondary)] font-medium">
         <span>{title}</span>
-        {icon && <span className="text-[var(--accent-primary)] opacity-80">{icon}</span>}
+        {Icon && <span className="text-[var(--accent-primary)] opacity-80"><Icon className="w-5 h-5" /></span>}
       </div>
       <div className="text-2xl font-bold text-[var(--text-primary)]">
         {value}

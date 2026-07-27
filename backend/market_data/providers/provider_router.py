@@ -2,7 +2,7 @@ import logging
 from typing import Dict, Any, List
 
 from market_data.providers.base_provider import BaseIntradayProvider
-from market_data.providers.yahoo_provider import YahooIntradayProvider
+from market_data.providers.yahoo_provider import YahooProvider
 from market_data.providers.jugaad_provider import JugaadProvider
 from data_platform.core.config_manager import ConfigManager
 
@@ -17,7 +17,7 @@ class ProviderRouter:
         self.config = config_manager.get_config("market_data")
         
         self.providers: Dict[str, BaseIntradayProvider] = {
-            "yahoo": YahooIntradayProvider(),
+            "yahoo": YahooProvider(),
             "jugaad": JugaadProvider(),
             # "nse": NSEProvider() # Placeholder for official NSE API if needed
         }

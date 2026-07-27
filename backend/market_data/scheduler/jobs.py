@@ -1,4 +1,5 @@
 import logging
+import asyncio
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from market_data.service import MarketDataService
 
@@ -31,8 +32,26 @@ class MarketDataScheduler:
         # To be implemented with Provider
         
     async def ingest_bhavcopy(self):
-        logger.info("Scheduler: Running Bhavcopy ingestion...")
-        # To be implemented with Provider
+        logger.info("Scheduler: Running Bhavcopy ingestion pipeline...")
+        import subprocess
+        import os
+        
+        script_path = os.path.join(os.path.dirname(__file__), "..", "..", "scripts", "run_live_pipeline.py")
+        try:
+            # Run the pipeline script as a separate process to avoid blocking the main event loop too much
+            # though it uses asyncio internally.
+            process = await asyncio.create_subprocess_exec(
+                "python", script_path,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE
+            )
+            stdout, stderr = await process.communicate()
+            if process.returncode == 0:
+                logger.info(f"Bhavcopy Pipeline Success:\n{stdout.decode()}")
+            else:
+                logger.error(f"Bhavcopy Pipeline Failed:\n{stderr.decode()}")
+        except Exception as e:
+            logger.error(f"Failed to start pipeline: {e}")
         
     async def update_market_status(self):
         status = self.service.get_market_status()
